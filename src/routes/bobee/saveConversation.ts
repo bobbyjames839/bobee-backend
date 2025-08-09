@@ -1,4 +1,3 @@
-// src/routes/conversations.ts
 import { Router, Request, Response, NextFunction } from 'express'
 import admin from 'firebase-admin'
 import fetch from 'cross-fetch'
@@ -19,9 +18,6 @@ interface SaveConversationBody {
   history: HistoryItem[]
 }
 
-/**
- * Generates a concise title (max 6 words) for a user–AI conversation.
- */
 const getConversationTitle = async (
   userId: string,
   conversationText: string
@@ -32,10 +28,10 @@ const getConversationTitle = async (
   }
 
   const systemPrompt = `
-You are Bobee’s Title Generator.  
-Your only task is to read a user–AI chat transcript and produce a very short (max 6 words) descriptive title.  
-Respond with exactly and only:
-  { "title": "..." }
+  You are Bobee’s Title Generator.  
+  Your only task is to read a user–AI chat transcript and produce a very short (max 6 words) descriptive title.  
+  Respond with exactly and only:
+    { "title": "..." }
   `.trim()
 
   const messages = [
@@ -51,7 +47,7 @@ Respond with exactly and only:
     },
     body: JSON.stringify({
       model: 'gpt-4.1-mini',
-      temperature: 0.3,
+      temperature: 0.7,
       messages,
     }),
   })
@@ -81,7 +77,6 @@ Respond with exactly and only:
   return parsed.title.trim()
 }
 
-// Middleware to verify Firebase ID token
 async function verifyToken(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization
   if (!authHeader?.startsWith('Bearer ')) {
@@ -99,7 +94,6 @@ async function verifyToken(req: Request, res: Response, next: NextFunction) {
   }
 }
 
-// POST /conversations — create or update a conversation
 router.post(
   '/',
   verifyToken,
@@ -108,10 +102,8 @@ router.post(
       const uid = (req as any).uid as string
       const { conversationId, transcript, history } = req.body as SaveConversationBody
 
-      // Generate title from transcript
       const title = await getConversationTitle(uid, transcript)
 
-      // Build Firestore payload
       const payload: FirebaseFirestore.DocumentData = {
         title,
         transcript,

@@ -1,14 +1,11 @@
-// backend/src/routes/metricsFacts.ts
 import { Router, RequestHandler, Response } from 'express'
 import { authenticate, AuthenticatedRequest } from '../../middleware/authenticate'
 import { db } from '../../firebaseAdmin'
 
 const router = Router()
 
-// This is now a perfectly valid RequestHandler
 const getUserFacts: RequestHandler = async (req, res: Response) => {
   try {
-    // Cast so TS knows we ran authenticate() first
     const { uid } = req as AuthenticatedRequest
 
     const snap = await db
@@ -29,7 +26,6 @@ const getUserFacts: RequestHandler = async (req, res: Response) => {
   }
 }
 
-// mount it—authenticate() will inject `uid` for us
-router.get('/metrics/facts', authenticate, getUserFacts)
+router.get('/', authenticate, getUserFacts)
 
 export default router

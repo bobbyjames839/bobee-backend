@@ -1,4 +1,3 @@
-// backend/src/routes/getConversation.ts
 import { Router, Request, Response } from 'express'
 import admin from 'firebase-admin'
 import { authenticate, AuthenticatedRequest } from '../../middleware/authenticate'
@@ -13,14 +12,11 @@ export interface HistoryItem {
 const router = Router()
 const db = admin.firestore()
 
-// GET /conversations/:id
-// Returns JSON { history: HistoryItem[] }
 router.get(
   '/:id',
   authenticate,
   async (req: Request, res: Response) => {
     try {
-      // after `authenticate`, we know req is AuthenticatedRequest
       const uid = (req as AuthenticatedRequest).uid
       const { id } = req.params
 

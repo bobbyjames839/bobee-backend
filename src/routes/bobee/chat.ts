@@ -1,8 +1,7 @@
-// backend/src/routes/chat.ts
 import { Router, Request, Response } from 'express'
 import admin from 'firebase-admin'
 import { authenticate, AuthenticatedRequest } from '../../middleware/authenticate'
-import { getBobeeAnswer, ChatMessage } from './getResponse'
+import { getBobeeAnswer, ChatMessage } from './getAIResponse'
 
 export interface HistoryItem {
   question: string
@@ -21,14 +20,12 @@ interface ChatRequest {
 const router = Router()
 const db = admin.firestore()
 
-// POST /chat — handles metrics, AI call, and persisting the Q&A
 router.post('/', authenticate, async (req: Request, res: Response) => {
   try {
     const { conversationId, question, history, userFacts } =
       req.body as ChatRequest
     const uid = (req as AuthenticatedRequest).uid
 
-    // ——— Enforce chat‑length limit ———
     const projected = [...history, { question, answer: '' }]
     const wordCount = projected
       .flatMap(i => [i.question, i.answer || '', i.followup || ''])
@@ -38,7 +35,6 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Chat limit reached' })
     }
 
-    // ——— Bump conversationUsage counter ———
     const statsRef = db
       .collection('users')
       .doc(uid)
@@ -68,7 +64,6 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
       })
     }
 
-    // ——— Prepare AI call ———
     const metrics = userFacts
       ? userFacts.reduce<Record<string, string>>((acc, fact, i) => {
           acc[`fact${i + 1}`] = fact
@@ -76,7 +71,6 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
         }, {})
       : undefined
 
-    // annotate as ChatMessage[] so TS knows role is valid
     const pastMessages: ChatMessage[] = history.flatMap(item => {
       const msgs: ChatMessage[] = [{ role: 'user', content: item.question }]
       if (item.answer)   msgs.push({ role: 'assistant', content: item.answer })
@@ -91,7 +85,6 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
       pastMessages
     )
 
-    // ——— Persist to Firestore ———
     const convs = db.collection('users').doc(uid).collection('conversations')
     const payload: FirebaseFirestore.DocumentData = {}
     const idx = history.length * 2 + 1
@@ -123,4 +116,3 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
 
 export default router
 
-//hey

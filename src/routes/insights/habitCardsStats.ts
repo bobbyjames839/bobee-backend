@@ -1,4 +1,3 @@
-// functions/src/routes/mainScreen/habitCardsStats.ts
 import { Router, Request, Response } from 'express'
 import admin from 'firebase-admin'
 import { authenticate } from '../../middleware/authenticate'
@@ -6,7 +5,6 @@ import { authenticate } from '../../middleware/authenticate'
 const router = Router()
 const db = admin.firestore()
 
-// 1) Verify token & populate req.uid
 router.use(authenticate)
 
 // 2) Guard to be safe
@@ -17,11 +15,6 @@ router.use((req: Request & { uid?: string }, res: Response, next) => {
   next()
 })
 
-/**
- * GET /
- * Returns journaling stats for HabitCards:
- *   { totalWords: number, totalEntries: number, currentStreak: number }
- */
 router.get('/', async (req: Request & { uid?: string }, res: Response) => {
   try {
     const uid = req.uid!
@@ -40,7 +33,6 @@ router.get('/', async (req: Request & { uid?: string }, res: Response) => {
     }
 
     const data = snap.data()!
-    // Pull only the fields you need for HabitCards
     const totalWords = data.totalWords || 0
     const totalEntries = data.totalEntries || 0
     const currentStreak = data.currentStreak || 0
