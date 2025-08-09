@@ -1,4 +1,3 @@
-// functions/src/routes/mainScreen/moodChartStats.ts
 import { Router, Request, Response } from 'express'
 import admin from 'firebase-admin'
 import { authenticate } from '../../middleware/authenticate'
@@ -10,10 +9,8 @@ type SeriesResponse = Record<RangeKey, MoodSeries>
 const router = Router()
 const db = admin.firestore()
 
-// 1) Verify & attach uid
 router.use(authenticate)
 
-// 2) Guard
 router.use((req: Request & { uid?: string }, res: Response, next) => {
   if (!req.uid) {
     return res.status(401).json({ error: 'Unauthorized – missing UID' })
@@ -21,10 +18,6 @@ router.use((req: Request & { uid?: string }, res: Response, next) => {
   next()
 })
 
-/**
- * GET /
- * → { '7d': { labels, values }, '28d': { labels, values } }
- */
 router.get('/', async (req: Request & { uid?: string }, res: Response) => {
   try {
     const uid = req.uid!
@@ -45,7 +38,6 @@ router.get('/', async (req: Request & { uid?: string }, res: Response) => {
         .where('createdAt', '>=', admin.firestore.Timestamp.fromDate(start))
         .get()
 
-      // group scores by date
       const byDay: Record<string, number[]> = {}
       snap.docs.forEach(doc => {
         const data = doc.data()
@@ -57,7 +49,6 @@ router.get('/', async (req: Request & { uid?: string }, res: Response) => {
         }
       })
 
-      // build labels & values arrays
       const labels: string[] = []
       const values: (number|null)[] = []
       for (let i = days - 1; i >= 0; i--) {
@@ -73,7 +64,6 @@ router.get('/', async (req: Request & { uid?: string }, res: Response) => {
         )
       }
 
-      // for 28d, blank out intermediate labels
       out[key] = {
         labels: key === '28d'
           ? labels.map((l, idx) => idx % 4 === 0 ? l : '')

@@ -6,7 +6,6 @@ import cors from 'cors';
 import checkAuth from './routes/authLogic/checkAuth';
 import signUp from './routes/authLogic/signUp';
 import deleteAccount from './routes/authLogic/deleteAccount';
-
 //bobee page
 import getConvosAndDailyCount from './routes/bobee/getConvsAndDailyCount';
 import deleteConversation from './routes/bobee/deleteConversation'
@@ -14,26 +13,28 @@ import openConversation from './routes/bobee/openConversation'
 import chat from './routes/bobee/chat'
 import saveConversation from './routes/bobee/saveConversation'
 import loadUserFacts from './routes/bobee/loadUserFacts'
-
-
-
-
-
-
-
-import checkVoiceUsageRouter from './routes/stopRecording/checkVoiceUsage';
-import transcribeRouter from './routes/stopRecording/transcribeAudio';
-import updatePersonality from './routes/stopRecording/personality'
-import journalResponse from './routes/stopRecording/journalResponse'
-import updateWordStreak from './routes/stopRecording/updateStats'
-import journal from './routes/submitJournal/journal'
-import habitCardsStatsRouter from './routes/insights/habitCardsStats'
-import moodChartStatsRouter from './routes/insights/moodChartStats'
-import personalityStatsRouter from './routes/insights/personalityStats'
-import topicsStatsRouter from './routes/insights/topicStats'
-import fetchJournals from './routes/files/fetchJournals'
+//files page
+import getJournals from './routes/files/getJournals'
 import deleteJournal from './routes/files/deleteJournal'
+//insights page
+import habitCardsStats from './routes/insights/habitCardsStats'
+import moodChartStats from './routes/insights/moodChartStats'
+import personalityStats from './routes/insights/personalityStats'
+import topicsStats from './routes/insights/topicStats'
+//journal page
+import updateWordCountAndStreak from './routes/journal/updateWordCountAndStreak';
+import checkVoiceUsage from './routes/journal/checkVoiceUsage';
+import transcribe from './routes/journal/transcribeAudio';
+import personalityMetrics from './routes/journal/personalityMetrics'
+import journalResponse from './routes/journal/journalResponse'
+import submitJournal from './routes/journal/submitJournal'
+//subcribe
 import subscribe from './routes/subscribe/stripe'
+
+
+
+
+
 
 const app = express();
 app.use(cors());
@@ -52,32 +53,26 @@ app.use('/api/chat', chat)
 app.use('/api/save-conversation', saveConversation)
 app.use('/api/load-user-facts', loadUserFacts)
 
-
-
-
-
-
-
-
-//stopRecording
-app.use('/api/check-voice-usage', checkVoiceUsageRouter);
-app.use('/api/transcribe', transcribeRouter);
-app.use('/api/personality', updatePersonality);
-app.use('/api/journal-response', journalResponse)
-app.use('/api/update-word-count-and-streak', updateWordStreak)
-//submitJournal
-app.use('/api/journal', journal)
-app.use('/api/habit-cards-stats', habitCardsStatsRouter)
-app.use('/api/mood-chart-stats', moodChartStatsRouter)
-app.use('/api/personality-stats', personalityStatsRouter)
-app.use('/api/topics', topicsStatsRouter)
-//bobee
-//files
-app.use('/api/fetch-journals', fetchJournals)
+//files page
+app.use('/api/get-journals', getJournals)
 app.use('/api/delete-journal', deleteJournal)
-//subscription
-app.use('/api/subscribe', subscribe)
 
+//insights page
+app.use('/api/habit-cards-stats', habitCardsStats)
+app.use('/api/mood-chart-stats', moodChartStats)
+app.use('/api/personality-stats', personalityStats)
+app.use('/api/topics', topicsStats)
+
+//journal page
+app.use('/api/update-word-count-and-streak', updateWordCountAndStreak)
+app.use('/api/check-voice-usage', checkVoiceUsage);
+app.use('/api/transcribe', transcribe);
+app.use('/api/get-personality-metrics', personalityMetrics);
+app.use('/api/journal-response', journalResponse)
+app.use('/api/submit-journal', submitJournal)
+
+//subscribe
+app.use('/api/subscribe', subscribe)
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {

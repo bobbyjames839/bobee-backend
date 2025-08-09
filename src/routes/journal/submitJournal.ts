@@ -1,4 +1,3 @@
-// src/routes/journal.ts
 import express from 'express';
 import admin from 'firebase-admin';
 
@@ -6,8 +5,6 @@ const router = express.Router();
 const db = admin.firestore();
 const FieldValue = admin.firestore.FieldValue;
 
-// If you have a fixed list of personality keys, define them here.
-// Otherwise you can replace this with Object.keys(aiData.personality).
 const PERSONALITY_KEYS = [
   'resilience',
   'discipline',

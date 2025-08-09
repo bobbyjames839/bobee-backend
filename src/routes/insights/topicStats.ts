@@ -1,4 +1,3 @@
-// functions/src/routes/mainScreen/topicsStats.ts
 import { Router, Request, Response } from 'express'
 import admin from 'firebase-admin'
 import { authenticate } from '../../middleware/authenticate'
@@ -6,10 +5,8 @@ import { authenticate } from '../../middleware/authenticate'
 const router = Router()
 const db = admin.firestore()
 
-// 1) Authenticate & attach uid
 router.use(authenticate)
 
-// 2) Guard
 router.use((req: Request & { uid?: string }, res: Response, next) => {
   if (!req.uid) {
     return res.status(401).json({ error: 'Unauthorized – missing UID' })
@@ -17,10 +14,6 @@ router.use((req: Request & { uid?: string }, res: Response, next) => {
   next()
 })
 
-/**
- * GET /
- * → { topics: Array<{ topic: string; count: number }> }
- */
 router.get('/', async (req: Request & { uid?: string }, res: Response) => {
   try {
     const uid = req.uid!
@@ -30,7 +23,6 @@ router.get('/', async (req: Request & { uid?: string }, res: Response) => {
       .get()
 
     const data = snap.exists ? snap.data()! : {}
-    // turn { topic1: count1, topic2: count2 } into array, filter zeros, sort & take top 5
     const topics = Object.entries(data)
       .map(([topic, count]) => ({ topic, count: count as number }))
       .filter(t => t.count > 0)

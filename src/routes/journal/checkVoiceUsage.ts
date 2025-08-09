@@ -8,7 +8,6 @@ router.post(
   '/',
   authenticate,
   async (req: Request, res: Response) => {
-    // Log incoming request
     console.log('[checkVoiceUsage] secondsUsed:', req.body.secondsUsed);
 
     const { secondsUsed } = req.body;

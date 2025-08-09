@@ -7,7 +7,6 @@ const db = admin.firestore()
 
 router.use(authenticate)
 
-// 2) Guard to be safe
 router.use((req: Request & { uid?: string }, res: Response, next) => {
   if (!req.uid) {
     return res.status(401).json({ error: 'Unauthorized – missing UID' })
@@ -24,7 +23,6 @@ router.get('/', async (req: Request & { uid?: string }, res: Response) => {
 
     const snap = await statsRef.get()
     if (!snap.exists) {
-      // No stats yet → return zeros
       return res.json({
         totalWords: 0,
         totalEntries: 0,
