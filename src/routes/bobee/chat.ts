@@ -22,12 +22,11 @@ const db = admin.firestore()
 
 router.post('/', authenticate, async (req: Request, res: Response) => {
   try {
-    const { conversationId, question, history, userFacts } =
-      req.body as ChatRequest
+    const { conversationId, question, history, userFacts } = req.body as ChatRequest
     const uid = (req as AuthenticatedRequest).uid
 
-    const projected = [...history, { question, answer: '' }]
-    const wordCount = projected
+    // Check word limit
+    const wordCount = [...history, { question, answer: '' }]
       .flatMap(i => [i.question, i.answer || '', i.followup || ''])
       .join(' ')
       .split(/\s+/).length
@@ -35,49 +34,21 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Chat limit reached' })
     }
 
-    const statsRef = db
-      .collection('users')
-      .doc(uid)
-      .collection('metrics')
-      .doc('stats')
-    const statsSnap = await statsRef.get()
+    // Prepare metrics if provided
+    const metrics = userFacts?.reduce<Record<string, string>>((acc, fact, i) => {
+      acc[`fact${i + 1}`] = fact
+      return acc
+    }, {})
 
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const todayStr = today.toLocaleDateString('en-CA')
-
-    if (statsSnap.exists) {
-      const data = statsSnap.data()!
-      const cu = data.conversationUsage || {}
-      const newCount = cu.date === todayStr ? (cu.count || 0) + 1 : 1
-      await statsRef.update({
-        'conversationUsage.date': todayStr,
-        'conversationUsage.count': newCount,
-      })
-    } else {
-      await statsRef.set({
-        totalWords: 0,
-        totalEntries: 0,
-        currentStreak: 0,
-        lastJournalDate: admin.firestore.FieldValue.serverTimestamp(),
-        conversationUsage: { date: todayStr, count: 1 },
-      })
-    }
-
-    const metrics = userFacts
-      ? userFacts.reduce<Record<string, string>>((acc, fact, i) => {
-          acc[`fact${i + 1}`] = fact
-          return acc
-        }, {})
-      : undefined
-
+    // Format past messages for AI
     const pastMessages: ChatMessage[] = history.flatMap(item => {
       const msgs: ChatMessage[] = [{ role: 'user', content: item.question }]
-      if (item.answer)   msgs.push({ role: 'assistant', content: item.answer })
+      if (item.answer) msgs.push({ role: 'assistant', content: item.answer })
       if (item.followup) msgs.push({ role: 'assistant', content: item.followup })
       return msgs
     })
 
+    // Get AI response
     const { answer, reasoning, followup } = await getBobeeAnswer(
       uid,
       question,
@@ -85,26 +56,52 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
       pastMessages
     )
 
+    // Firestore refs
     const convs = db.collection('users').doc(uid).collection('conversations')
-    const payload: FirebaseFirestore.DocumentData = {}
-    const idx = history.length * 2 + 1
-    payload[`message${idx}`]     = question
-    payload[`message${idx + 1}`] = {
-      answer,
-      ...(reasoning  && { reasoning }),
-      ...(followup   && { followup }),
-    }
-    payload.updatedAt = admin.firestore.FieldValue.serverTimestamp()
-
     let newId = conversationId
-    if (conversationId) {
-      await convs.doc(conversationId).update(payload)
-    } else {
+
+    // Create payload
+    const idx = history.length * 2 + 1
+    const payload: FirebaseFirestore.DocumentData = {
+      [`message${idx}`]: question,
+      [`message${idx + 1}`]: { answer, ...(reasoning && { reasoning }), ...(followup && { followup }) },
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }
+
+    // Check if new conversation
+    const isNewConversation = !conversationId
+    console.log('isNewConversation:', isNewConversation)
+    if (isNewConversation) {
       const ref = await convs.add({
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         ...payload,
       })
       newId = ref.id
+
+      // Increment daily usage only for new conversations
+      const statsRef = db.collection('users').doc(uid).collection('metrics').doc('stats')
+      const todayStr = new Date().toLocaleDateString('en-CA')
+
+      const statsSnap = await statsRef.get()
+      if (statsSnap.exists) {
+        const data = statsSnap.data()!
+        const cu = data.conversationUsage || {}
+        const newCount = cu.date === todayStr ? (cu.count || 0) + 1 : 1
+        await statsRef.update({
+          'conversationUsage.date': todayStr,
+          'conversationUsage.count': newCount,
+        })
+      } else {
+        await statsRef.set({
+          totalWords: 0,
+          totalEntries: 0,
+          currentStreak: 0,
+          lastJournalDate: admin.firestore.FieldValue.serverTimestamp(),
+          conversationUsage: { date: todayStr, count: 1 },
+        })
+      }
+    } else {
+      await convs.doc(conversationId).update(payload)
     }
 
     res.json({ answer, reasoning, followup, conversationId: newId })
@@ -115,4 +112,3 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
 })
 
 export default router
-
