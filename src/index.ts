@@ -67,7 +67,7 @@ app.use('/api/topics', topicsStats)
 app.use('/api/update-word-count-and-streak', updateWordCountAndStreak)
 app.use('/api/check-voice-usage', checkVoiceUsage);
 app.use('/api/transcribe', transcribe);
-app.use('/api/get-personality-metrics', personalityMetrics);
+app.use('/api/get-personality-scores', personalityMetrics);
 app.use('/api/journal-response', journalResponse)
 app.use('/api/submit-journal', submitJournal)
 

@@ -48,10 +48,14 @@ router.get(
   '/',
   authenticate,
   async (req: Request, res: Response) => {
+
+    console.log('this is working')
     const { uid } = req as AuthenticatedRequest;
 
     try {
       const personality = await fetchOrInitScores(uid);
+      console.log('Personality scores for', uid, personality);
+
       return res.json({ personality });
     } catch (err: any) {
       console.error('Error fetching personality:', err);

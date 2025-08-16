@@ -20,7 +20,6 @@ router.post('/', upload.single('audio'), async (req: Request, res: Response) => 
   }
 
   const { path: filepath, originalname, mimetype } = req.file;
-  console.log('Received', originalname, 'as', filepath, mimetype);
 
   try {
     const form = new FormData();
@@ -48,7 +47,6 @@ router.post('/', upload.single('audio'), async (req: Request, res: Response) => 
     if (typeof json.text !== 'string') {
       throw new Error('No transcription returned');
     }
-
     res.json({ text: json.text.trim() });
   } catch (err: any) {
     console.error('Transcription failed:', err);
