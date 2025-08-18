@@ -1,4 +1,3 @@
-/* ========== Backend: src/routes/subscribe.ts ========== */
 import { Router, Request, Response } from 'express';
 import admin from 'firebase-admin';
 import Stripe from 'stripe';

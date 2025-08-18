@@ -30,6 +30,7 @@ import journalResponse from './routes/journal/journalResponse'
 import submitJournal from './routes/journal/submitJournal'
 //subcribe
 import subscribe from './routes/subscribe/stripe'
+import subscribeConfirm from './routes/subscribe/subscribeConfirm';
 
 
 
@@ -73,6 +74,7 @@ app.use('/api/submit-journal', submitJournal)
 
 //subscribe
 app.use('/api/subscribe', subscribe)
+app.use('/api/subscribe/confirm', subscribeConfirm);
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
