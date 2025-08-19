@@ -19,13 +19,13 @@ router.get('/', async (req: Request & { uid?: string }, res: Response) => {
     const uid = req.uid!
 
     // 1) Read existing habit stats
-    const statsRef = db.collection('users').doc(uid).collection('metrics').doc('stats')
-    const snap = await statsRef.get()
-    const base = snap.exists ? snap.data()! : {}
+  const userRef = db.collection('users').doc(uid)
+  const snap = await userRef.get()
+  const base = snap.exists ? snap.data()! : {}
 
-    const totalWords = base.totalWords || 0
-    const totalEntries = base.totalEntries || 0
-    const currentStreak = base.currentStreak || 0
+  const totalWords = base.journalStats?.totalWords || 0
+  const totalEntries = base.journalStats?.totalEntries || 0
+  const currentStreak = base.journalStats?.streak || 0
 
     // 2) Compute avg mood over the past 3 days (72 hours)
     const since = admin.firestore.Timestamp.fromDate(

@@ -21,36 +21,40 @@ router.post('/', async (req: Request, res: Response) => {
       return res.status(400).json({ error: `weak-password` })
     }
 
-    const photoURL = `https://api.dicebear.com/7.x/thumbs/svg?seed=${encodeURIComponent(nameRaw)}`
     const userRecord = await auth.createUser({
       email: emailRaw,
       password,
       displayName: nameRaw,
-      photoURL,
       emailVerified: false,
       disabled: false,
     })
 
     const uid = userRecord.uid
     const batch = db.batch()
-    const userInfoRef = db.collection('users').doc(uid).collection('metrics').doc('userInfo')
-    const statsRef = db.collection('users').doc(uid).collection('metrics').doc('stats')
+    const userInfoRef = db.collection('users').doc(uid)
+    const today = new Date().toISOString().split('T')[0]
+
+    // Initialize empty conversations and journals collections
+    const conversationsRef = db.collection('users').doc(uid).collection('conversations').doc('init')
+    const journalsRef = db.collection('users').doc(uid).collection('journals').doc('init')
 
     batch.set(userInfoRef, {
       name: nameRaw,
       email: emailRaw,
-      subscribed: false,
+      subscribe: { subscribed: false, cancelDate: null },
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      photoURL,
+      lastJournalDate: null,
+      voiceUsage: { date: today, totalSeconds: 0 },
+      conversationUsage: { date: today, count: 0 },
+      journalStats: { streak: 0, totalEntries: 0, totalWords: 0 },
+      personality: { clarity: 50, confidence: 50, discipline: 50, focus: 50, resilience: 50, selfWorth: 50 },
+      personalityDeltas: { clarity: 0, confidence: 0, discipline: 0, focus: 0, resilience: 0, selfWorth: 0 },
+      topics: {},
+      facts: [],
     })
 
-    const today = new Date().toISOString().split('T')[0]
-    batch.set(statsRef, {
-      voiceUsage: { date: today, totalSeconds: 0 },
-      totalWords: 0,
-      totalEntries: 0,
-      currentStreak: 0,
-    })
+    batch.set(conversationsRef, { initialized: true })
+    batch.set(journalsRef, { initialized: true })
 
     await batch.commit()
 

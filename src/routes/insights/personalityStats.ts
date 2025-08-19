@@ -17,15 +17,11 @@ router.use((req: Request & { uid?: string }, res: Response, next) => {
 router.get('/', async (req: Request & { uid?: string }, res: Response) => {
   try {
     const uid = req.uid!
-    const base = db.collection('users').doc(uid).collection('metrics')
-
-    const [snap, deltaSnap] = await Promise.all([
-      base.doc('personality').get(),
-      base.doc('personalityDeltas').get(),
-    ])
-
-    const data = snap.exists ? snap.data()! : {}
-    const deltas = deltaSnap.exists ? deltaSnap.data()! : {}
+  const userRef = db.collection('users').doc(uid)
+  const snap = await userRef.get()
+  const data = snap.exists ? snap.data()! : {}
+  const personality = data.personality || {}
+  const deltas = data.personalityDeltas || {}
 
     const personalityStats: Record<string, { value: number; delta: number }> = {}
     for (const key of ['resilience','discipline','focus','selfWorth','confidence','clarity'] as const) {

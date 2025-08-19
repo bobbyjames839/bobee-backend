@@ -79,27 +79,18 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
       newId = ref.id
 
       // Increment daily usage only for new conversations
-      const statsRef = db.collection('users').doc(uid).collection('metrics').doc('stats')
+      const userRef = db.collection('users').doc(uid)
       const todayStr = new Date().toLocaleDateString('en-CA')
-
-      const statsSnap = await statsRef.get()
-      if (statsSnap.exists) {
-        const data = statsSnap.data()!
+      const snap = await userRef.get()
+      let newCount = 1
+      if (snap.exists) {
+        const data = snap.data()!
         const cu = data.conversationUsage || {}
-        const newCount = cu.date === todayStr ? (cu.count || 0) + 1 : 1
-        await statsRef.update({
-          'conversationUsage.date': todayStr,
-          'conversationUsage.count': newCount,
-        })
-      } else {
-        await statsRef.set({
-          totalWords: 0,
-          totalEntries: 0,
-          currentStreak: 0,
-          lastJournalDate: admin.firestore.FieldValue.serverTimestamp(),
-          conversationUsage: { date: todayStr, count: 1 },
-        })
+        newCount = cu.date === todayStr ? (cu.count || 0) + 1 : 1
       }
+      await userRef.set({
+        conversationUsage: { date: todayStr, count: newCount }
+      }, { merge: true })
     } else {
       await convs.doc(conversationId).update(payload)
     }

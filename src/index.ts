@@ -22,15 +22,18 @@ import moodChartStats from './routes/insights/moodChartStats'
 import personalityStats from './routes/insights/personalityStats'
 import topicsStats from './routes/insights/topicStats'
 //journal page
-import updateWordCountAndStreak from './routes/journal/updateWordCountAndStreak';
+import getWordCountAndStreak from './routes/journal/getWordAndCountStreak';
 import checkVoiceUsage from './routes/journal/checkVoiceUsage';
 import transcribe from './routes/journal/transcribeAudio';
-import personalityMetrics from './routes/journal/personalityMetrics'
+import personalityMetrics from './routes/journal/getPersonalityMetrics'
 import journalResponse from './routes/journal/journalResponse'
+import updateVoiceUsage from './routes/journal/updateUserMetrics';
 import submitJournal from './routes/journal/submitJournal'
 //subcribe
-import subscribe from './routes/subscribe/stripe'
-import subscribeConfirm from './routes/subscribe/subscribeConfirm';
+import subscribeStart from './routes/subscribe/subscribeStart';
+import subscribeFinalise from './routes/subscribe/subscribeFinalise';
+import subscribeCancel from './routes/subscribe/subscribeCancel';
+import subscribeStatus from './routes/subscribe/subscribeStatus';
 
 
 
@@ -65,16 +68,19 @@ app.use('/api/personality-stats', personalityStats)
 app.use('/api/topics', topicsStats)
 
 //journal page
-app.use('/api/update-word-count-and-streak', updateWordCountAndStreak)
+app.use('/api/get-word-count-and-streak', getWordCountAndStreak);
 app.use('/api/check-voice-usage', checkVoiceUsage);
 app.use('/api/transcribe', transcribe);
 app.use('/api/get-personality-scores', personalityMetrics);
 app.use('/api/journal-response', journalResponse)
+app.use('/api/journal/update-user-metrics', updateVoiceUsage);
 app.use('/api/submit-journal', submitJournal)
 
 //subscribe
-app.use('/api/subscribe', subscribe)
-app.use('/api/subscribe/confirm', subscribeConfirm);
+app.use('/api/subscribe/start', subscribeStart);
+app.use('/api/subscribe/finalise', subscribeFinalise);
+app.use('/api/subscribe/cancel', subscribeCancel);
+app.use('/api/subscribe/status', subscribeStatus);
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {

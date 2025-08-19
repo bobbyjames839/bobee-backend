@@ -16,29 +16,15 @@ router.post(
     }
 
     const uid = (req as AuthenticatedRequest).uid;
-    const statsRef = db
-      .collection('users')
-      .doc(uid)
-      .collection('metrics')
-      .doc('stats');
-    const statsSnap = await statsRef.get();
-
+    const userRef = db.collection('users').doc(uid);
+    const userSnap = await userRef.get();
+    const data = userSnap.exists ? userSnap.data() || {} : {};
     const todayStr = new Date().toISOString().split('T')[0];
     let alreadyUsed = 0;
-    if (statsSnap.exists) {
-      const data = statsSnap.data();
-      if (data?.voiceUsage?.date === todayStr) {
-        alreadyUsed = data.voiceUsage.totalSeconds;
-      }
+    if (data.voiceUsage?.date === todayStr) {
+      alreadyUsed = data.voiceUsage.totalSeconds;
     }
-
-    const userInfoRef = db
-      .collection('users')
-      .doc(uid)
-      .collection('metrics')
-      .doc('userInfo');
-    const userInfoSnap = await userInfoRef.get();
-    const isSubscribed = userInfoSnap.exists && userInfoSnap.data()?.subscribed === true;
+    const isSubscribed = data.subscribe?.subscribed === true;
 
     const limit = isSubscribed ? 600 : 120;
     const newTotal = alreadyUsed + secondsUsed;
@@ -52,13 +38,8 @@ router.post(
       });
     }
 
-    await statsRef.set(
-      { voiceUsage: { date: todayStr, totalSeconds: newTotal } },
-      { merge: true }
-    );
-
-    console.log(`[checkVoiceUsage] allowed for ${uid}: ${newTotal}/${limit}`);
-    return res.status(200).json({ allowed: true, limit, used: newTotal });
+  console.log(`[checkVoiceUsage] allowed for ${uid}: ${newTotal}/${limit}`);
+  return res.status(200).json({ allowed: true, limit, used: newTotal });
   }
 );
 

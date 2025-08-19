@@ -25,6 +25,7 @@ type AIResponse = {
 };
 
 router.post('/', async (req, res) => {
+  // Voice usage update removed as requested
   try {
     const {
       userId,
