@@ -27,7 +27,6 @@ import checkVoiceUsage from './routes/journal/checkVoiceUsage';
 import transcribe from './routes/journal/transcribeAudio';
 import personalityMetrics from './routes/journal/getPersonalityMetrics'
 import journalResponse from './routes/journal/journalResponse'
-import updateVoiceUsage from './routes/journal/updateUserMetrics';
 import submitJournal from './routes/journal/submitJournal'
 //subcribe
 import subscribeStart from './routes/subscribe/subscribeStart';
@@ -73,7 +72,6 @@ app.use('/api/check-voice-usage', checkVoiceUsage);
 app.use('/api/transcribe', transcribe);
 app.use('/api/get-personality-scores', personalityMetrics);
 app.use('/api/journal-response', journalResponse)
-app.use('/api/journal/update-user-metrics', updateVoiceUsage);
 app.use('/api/submit-journal', submitJournal)
 
 //subscribe

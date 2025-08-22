@@ -22,12 +22,7 @@ router.delete('/:journalId', async (req: Request & { uid?: string }, res: Respon
     const journalRef = db
       .collection('users').doc(uid)
       .collection('journals').doc(journalId)
-    const statsRef = db
-      .collection('users').doc(uid)
-      .collection('metrics').doc('stats')
-    const topicRef = db
-      .collection('users').doc(uid)
-      .collection('metrics').doc('topics')
+    const userRef = db.collection('users').doc(uid);
 
     const journalSnap = await journalRef.get()
     if (!journalSnap.exists) {
@@ -37,13 +32,18 @@ router.delete('/:journalId', async (req: Request & { uid?: string }, res: Respon
     const topic = journalData.aiResponse?.topic
 
     if (topic) {
-      await topicRef.update({
-        [topic]: admin.firestore.FieldValue.increment(-1),
-      })
+      const userSnap = await userRef.get();
+      const prevTopics = userSnap.exists && userSnap.data()?.topics ? userSnap.data()!.topics : {};
+      await userRef.set({
+        topics: {
+          ...prevTopics,
+          [topic]: Math.max(0, (prevTopics?.[topic] || 1) - 1),
+        }
+      }, { merge: true });
     }
 
-    const statsSnap = await statsRef.get()
-    const statsData = statsSnap.exists ? statsSnap.data()! : {}
+    const userSnap2 = await userRef.get();
+    const statsData = userSnap2.exists ? userSnap2.data()! : {};
     const lastDate = statsData.lastJournalDate
       ? statsData.lastJournalDate.toDate().setHours(0,0,0,0)
       : null
@@ -60,15 +60,23 @@ router.delete('/:journalId', async (req: Request & { uid?: string }, res: Respon
         .get()
 
       if (remSnap.empty) {
-        await statsRef.update({
+        await userRef.set({
           lastJournalDate: admin.firestore.Timestamp.fromDate(new Date('2000-01-01')),
-          currentStreak: 0,
-        })
+          journalStats: {
+            ...(statsData.journalStats || {}),
+            currentStreak: 0,
+            totalEntries: Math.max(0, (statsData.journalStats?.totalEntries || 1) - 1),
+          }
+        }, { merge: true });
       } else {
-        const nextDate = remSnap.docs[0].data().createdAt.toDate()
-        await statsRef.update({
+        const nextDate = remSnap.docs[0].data().createdAt.toDate();
+        await userRef.set({
           lastJournalDate: admin.firestore.Timestamp.fromDate(nextDate),
-        })
+          journalStats: {
+            ...(statsData.journalStats || {}),
+            totalEntries: Math.max(0, (statsData.journalStats?.totalEntries || 1) - 1),
+          }
+        }, { merge: true });
       }
     }
 

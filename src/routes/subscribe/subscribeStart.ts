@@ -32,12 +32,21 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
     const priceId = process.env.STRIPE_PRO_PRICE_ID;
     if (!priceId) return res.status(500).json({ error: 'Server missing STRIPE_PRO_PRICE_ID' });
 
-    // Load user -> must have stripeCustomerId
+    // Load user
     const snap = await db.collection('users').doc(uid).get();
     if (!snap.exists) return res.status(404).json({ error: 'User not found' });
-
-    const customerId = snap.data()!.stripeCustomerId as string | undefined;
-    if (!customerId) return res.status(400).json({ error: 'No Stripe customer on file' });
+    let customerId = snap.data()!.stripeCustomerId as string | undefined;
+    // If no Stripe customer, create one and save to Firestore
+    if (!customerId) {
+      const userData = snap.data()!;
+      const customer = await stripe.customers.create({
+        email: userData.email,
+        name: userData.name,
+        metadata: { firebaseUid: uid },
+      });
+      customerId = customer.id;
+      await db.collection('users').doc(uid).set({ stripeCustomerId: customerId }, { merge: true });
+    }
 
     // Create subscription; expand invoice + its confirmation_secret
     const subscription = await stripe.subscriptions.create({

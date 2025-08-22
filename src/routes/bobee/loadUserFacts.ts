@@ -4,28 +4,33 @@ import { db } from '../../firebaseAdmin'
 
 const router = Router()
 
-const getUserFacts: RequestHandler = async (req, res: Response) => {
+const getUserProfile: RequestHandler = async (req, res: Response) => {
   try {
     const { uid } = req as AuthenticatedRequest
 
-    const snap = await db
+    // Get the user document directly to access the userProfile
+    const userDoc = await db
       .collection('users')
       .doc(uid)
-      .collection('metrics')
-      .doc('facts')
       .get()
 
-    const facts = snap.exists
-      ? (snap.data()?.facts as string[] | undefined) || null
-      : null
-
-    res.json({ facts })
+    // If the document exists, extract the userProfile
+    if (userDoc.exists) {
+      const userData = userDoc.data()!;
+      
+      // Return only the userProfile
+      res.json({ 
+        userProfile: userData.userProfile || null
+      });
+    } else {
+      res.json({ userProfile: null });
+    }
   } catch (err) {
-    console.error('Error loading user facts:', err)
+    console.error('Error loading user profile data:', err)
     res.status(500).json({ error: 'Server error' })
   }
 }
 
-router.get('/', authenticate, getUserFacts)
+router.get('/', authenticate, getUserProfile)
 
 export default router

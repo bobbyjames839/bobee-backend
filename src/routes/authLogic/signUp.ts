@@ -50,7 +50,41 @@ router.post('/', async (req: Request, res: Response) => {
       personality: { clarity: 50, confidence: 50, discipline: 50, focus: 50, resilience: 50, selfWorth: 50 },
       personalityDeltas: { clarity: 0, confidence: 0, discipline: 0, focus: 0, resilience: 0, selfWorth: 0 },
       topics: {},
-      facts: [],
+      // New comprehensive userProfile structure instead of simple facts array
+      userProfile: {
+        demographics: {
+          name: nameRaw,
+          occupation: "",
+          age: null,
+          location: ""
+        },
+        preferences: {
+          communicationStyle: "balanced", // direct, empathetic, analytical, balanced
+          journalingGoals: [],
+          interests: []
+        },
+        personalityInsights: {
+          strengths: [],
+          challenges: [],
+          values: [],
+          motivations: []
+        },
+        lifeContext: {
+          significantEvents: [],
+          currentChallenges: [],
+          relationships: [],
+          healthFactors: []
+        },
+        goals: {
+          shortTerm: [],
+          longTerm: [],
+          habits: {
+            developing: [],
+            breaking: []
+          }
+        },
+        lastUpdated: admin.firestore.FieldValue.serverTimestamp()
+      }
     })
 
     batch.set(conversationsRef, { initialized: true })

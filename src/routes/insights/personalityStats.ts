@@ -25,7 +25,7 @@ router.get('/', async (req: Request & { uid?: string }, res: Response) => {
 
     const personalityStats: Record<string, { value: number; delta: number }> = {}
     for (const key of ['resilience','discipline','focus','selfWorth','confidence','clarity'] as const) {
-      const raw = typeof data[key] === 'number' ? data[key] : 50
+      const raw = typeof personality[key] === 'number' ? personality[key] : 50
       const value = Math.round(raw)
       const delta = typeof deltas[key] === 'number' ? deltas[key] : 0
       personalityStats[key] = { value, delta }

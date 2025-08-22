@@ -17,7 +17,7 @@ export type AIResponse = {
   summary: string;
   nextStep: string;
   topic: string;
-  personality: PersonalityScores;
+  personalityDeltas: PersonalityScores;
   newFacts: string[];
   selfInsight: string;
   thoughtPattern: string;
@@ -25,39 +25,76 @@ export type AIResponse = {
 
 const router = Router();
 
-router.post('/', authenticate, async (req: Request, res: Response) => {
+router.post('/', authenticate, async (req: Request & { uid?: string }, res: Response) => {
   const { journal, prompt, personality } = req.body;
+  const uid = req.uid;
 
   const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
   if (!OPENAI_API_KEY) {
     return res.status(500).json({ error: 'Missing OpenAI API key' });
   }
-
+  
+  // Get user profile data if available
+  let userProfileData = {};
+  try {
+    if (uid) {
+      const db = require('../../firebaseAdmin').db;
+      const userDoc = await db.collection('users').doc(uid).get();
+      if (userDoc.exists) {
+        const userData = userDoc.data();
+        if (userData.userProfile) {
+          userProfileData = userData.userProfile;
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Error fetching user profile:', err);
+    // Continue without userProfile if there's an error
+  }
+  
+  // Format the context for the AI with both personality metrics and user profile
   const personalityString = `Personality metrics:\n${JSON.stringify(personality, null, 2)}`;
+  const userProfileString = Object.keys(userProfileData).length > 0 ? 
+    `\n\nUser Profile:\n${JSON.stringify(userProfileData, null, 2)}` : '';
+  
   const combinedContent = prompt
-    ? `${personalityString}\n\nPrompt: ${prompt}\n\nJournal Entry: ${journal}`
-    : `${personalityString}\n\nJournal Entry: ${journal}`;
+    ? `${personalityString}${userProfileString}\n\nPrompt: ${prompt}\n\nJournal Entry: ${journal}`
+    : `${personalityString}${userProfileString}\n\nJournal Entry: ${journal}`;
 
   const systemPrompt = `
 You are Bobee, the insight engine of the Bobee journaling app.
 
+You will receive:
+1. Personality metrics - The user's current personality trait scores
+2. User Profile (when available) - A structured profile containing:
+   - demographics (age, location, occupation, etc.)
+   - preferences (likes, dislikes, interests)
+   - habits (routines, behaviors)
+   - goals (short-term and long-term aspirations)
+   - challenges (obstacles, difficulties)
+   - achievements (accomplishments, milestones)
+   - insights (self-awareness, patterns)
+3. Journal Entry - The user's written journal
+4. Optional Prompt - A specific journaling prompt if provided
+
 TASKS
 1. Validate the entry (must contain at least 2 words).
 2. Rate overall mood from 1 (very negative) to 10 (very positive).
-3. Output exactly three single-word descriptors that best capture the user’s feelings (e.g. ["calm","uncertain","hopeful"]).
-4. Write one reflective paragraph (50–70 words) that reads the journal back to the user in a thoughtful and empathetic tone.
-5. Provide one concise “next step” sentence (≤ 20 words) suggesting a simple action the user could try tomorrow.
+3. Output exactly three single-word descriptors that best capture the user's feelings (e.g. ["calm","uncertain","hopeful"]).
+4. Write one reflective paragraph (50–70 words) that reads the journal back to the user in a thoughtful and empathetic tone. If the User Profile is available, personalize this based on their demographics, preferences, and insights.
+5. Provide one concise "next step" sentence (≤ 20 words) suggesting a simple action the user could try tomorrow. Reference their goals or challenges from the User Profile when possible.
 6. Assign a **single-word** topic that best describes the journal entry. Choose from:
    ["emotion","mood","achievement","work","relationships","stress","gratitude","health","productivity","anxiety","growth","money","creativity","reflection","goals"]
-7. Based on the content of this journal entry, return **slightly adjusted** personality scores (0–100 scale) for:
-   "resilience", "discipline", "focus", "selfWorth", "confidence", "clarity".
-8. Extract any new personal facts you learn about the user, these will be used to provide the user with more personalised advice when they use a chatbot so make sure you only extract facts about them personally (e.g. hobbies, preferences, milestones) **as an array of strings**.
-9. Provide a **detailed selfInsight** (2–3 sentences) offering nuanced analysis of recurring themes, emotional shifts, or emerging strengths in the user’s mood and journaling style.
-10. Detect the primary thought pattern in this entry. Then write a 3–4 sentence paragraph,that:
-   - Explains how this pattern shows up in the journal text
-   - Describes its impact on the user’s mindset
-   - Suggests one concrete way to reframe or counteract it
-   Label this field as thoughtPattern.
+7. Based on the content of this journal entry, return **deltas** (positive or negative integer change, e.g. 2, -1, 0) for each personality trait:
+  "resilience", "discipline", "focus", "selfWorth", "confidence", "clarity".
+  Example: { "resilience": 2, "discipline": -1, ... }
+8. Extract any new personal facts you learn about the user, these will be used to provide the user with more personalized advice. Focus on facts not already present in their User Profile and categorize them appropriately (as the system will automatically add these to the corresponding sections in the userProfile).
+9. Provide a **detailed selfInsight** (2–3 sentences) offering nuanced analysis of recurring themes, emotional shifts, or emerging strengths. Consider trends visible across the user's profile data and personality metrics when available.
+10. Detect the primary thought pattern in this entry. Then write a 3–4 sentence paragraph that:
+    - Explains how this pattern shows up in the journal text
+    - Describes its impact on the user's mindset
+    - Suggests one concrete way to reframe or counteract it, tailored to their preferences and goals from the User Profile when available
+    Label this field as thoughtPattern.
 
 OUTPUT  
 Return **only** this JSON:
@@ -70,7 +107,7 @@ Return **only** this JSON:
   "summary": "...",
   "nextStep": "...",
   "topic": "...",
-  "personality": {
+  "personalityDeltas": {
     "resilience": number,
     "discipline": number,
     "focus": number,
@@ -108,6 +145,7 @@ If unusable, respond:
 }
 \`\`\`
 `.trim();
+
 
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -161,7 +199,7 @@ If unusable, respond:
       summary: parsed.summary,
       nextStep: parsed.nextStep,
       topic: parsed.topic,
-      personality: parsed.personality,
+  personalityDeltas: parsed.personalityDeltas,
       newFacts: Array.isArray(parsed.newFacts)
         ? parsed.newFacts.filter((f: any) => typeof f === 'string')
         : [],

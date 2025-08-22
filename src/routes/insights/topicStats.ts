@@ -17,19 +17,14 @@ router.use((req: Request & { uid?: string }, res: Response, next) => {
 router.get('/', async (req: Request & { uid?: string }, res: Response) => {
   try {
     const uid = req.uid!
-    const snap = await db
-      .collection('users').doc(uid)
-      .collection('metrics').doc('topics')
-      .get()
-
-    const data = snap.exists ? snap.data()! : {}
+    const snap = await db.collection('users').doc(uid).get();
+    const data = snap.exists && snap.data()?.topics ? snap.data()!.topics : {};
     const topics = Object.entries(data)
       .map(([topic, count]) => ({ topic, count: count as number }))
       .filter(t => t.count > 0)
       .sort((a, b) => b.count - a.count)
-      .slice(0, 5)
-
-    res.json({ topics })
+      .slice(0, 5);
+    res.json({ topics });
   } catch (err) {
     console.error('Error fetching topicsStats:', err)
     res.status(500).json({ error: 'Failed to read topics' })
