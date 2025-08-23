@@ -35,17 +35,32 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
     // Load user
     const snap = await db.collection('users').doc(uid).get();
     if (!snap.exists) return res.status(404).json({ error: 'User not found' });
-    let customerId = snap.data()!.stripeCustomerId as string | undefined;
-    // If no Stripe customer, create one and save to Firestore
-    if (!customerId) {
-      const userData = snap.data()!;
-      const customer = await stripe.customers.create({
-        email: userData.email,
-        name: userData.name,
-        metadata: { firebaseUid: uid },
-      });
-      customerId = customer.id;
-      await db.collection('users').doc(uid).set({ stripeCustomerId: customerId }, { merge: true });
+    
+    // Get user data
+    const userData = snap.data()!;
+    let customerId: string;
+    
+    // Since we switched from test to live mode, check if customer ID is from test mode
+    const existingCustomerId = userData.stripeCustomerId as string | undefined;
+    const isTestCustomerId = existingCustomerId?.startsWith('cus_');
+    
+    // Create a new customer if we don't have one or if it's a test mode customer ID
+    if (!existingCustomerId || isTestCustomerId) {
+      try {
+        const customer = await stripe.customers.create({
+          email: userData.email,
+          name: userData.name,
+          metadata: { firebaseUid: uid },
+        });
+        customerId = customer.id;
+        await db.collection('users').doc(uid).set({ stripeCustomerId: customerId }, { merge: true });
+      } catch (err) {
+        console.error('Failed to create customer:', err);
+        return res.status(500).json({ error: 'Failed to create customer account. Please try again.' });
+      }
+    } else {
+      // Use existing customer ID if it's already a live mode ID
+      customerId = existingCustomerId;
     }
 
     // Create subscription; expand invoice + its confirmation_secret
