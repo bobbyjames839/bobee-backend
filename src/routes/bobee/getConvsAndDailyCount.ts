@@ -26,11 +26,12 @@ router.get('/', async (req: Request & { uid?: string }, res: Response) => {
       .orderBy('createdAt', 'desc')
       .limit(limit)
 
-    const statsRef = db
-      .collection('users').doc(uid)
-      .collection('metrics').doc('stats')
-
-    const [convsSnap, statsSnap] = await Promise.all([convsRef.get(), statsRef.get()])
+  // Fetch conversations list and the root user doc (which stores conversationUsage).
+  // Previously this endpoint looked for conversationUsage in users/{uid}/metrics/stats,
+  // but chat.ts and signUp.ts write conversationUsage on the root user document.
+  // That mismatch caused todayCount to remain 0 in the quota bar.
+  const userRef = db.collection('users').doc(uid)
+  const [convsSnap, userSnap] = await Promise.all([convsRef.get(), userRef.get()])
 
     const conversations = convsSnap.docs.map(docSnap => {
       const d = docSnap.data() as any
@@ -46,9 +47,12 @@ router.get('/', async (req: Request & { uid?: string }, res: Response) => {
     })
 
     let todayCount = 0
-    if (statsSnap.exists) {
-      const data = statsSnap.data() as any
+    if (userSnap.exists) {
+      const data = userSnap.data() as any
       const usage = data?.conversationUsage || {}
+      // chat.ts uses toLocaleDateString('en-CA') which yields YYYY-MM-DD
+      // signUp.ts initializes with new Date().toISOString().split('T')[0]
+      // Normalize by slicing ISO string of now to 10 chars.
       const todayStr = new Date().toISOString().slice(0, 10)
       todayCount = usage.date === todayStr ? (usage.count || 0) : 0
     }
