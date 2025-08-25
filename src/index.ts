@@ -29,10 +29,9 @@ import personalityMetrics from './routes/journal/getPersonalityMetrics'
 import journalResponse from './routes/journal/journalResponse'
 import submitJournal from './routes/journal/submitJournal'
 //subcribe
-import subscribeStart from './routes/subscribe/subscribeStart';
-import subscribeFinalise from './routes/subscribe/subscribeFinalise';
-import subscribeCancel from './routes/subscribe/subscribeCancel';
 import subscribeStatus from './routes/subscribe/subscribeStatus';
+import iapVerify from './routes/subscribe/iapVerify';
+import unifiedStatus from './routes/subscribe/unifiedStatus';
 
 
 
@@ -75,10 +74,9 @@ app.use('/api/journal-response', journalResponse)
 app.use('/api/submit-journal', submitJournal)
 
 //subscribe
-app.use('/api/subscribe/start', subscribeStart);
-app.use('/api/subscribe/finalise', subscribeFinalise);
-app.use('/api/subscribe/cancel', subscribeCancel);
 app.use('/api/subscribe/status', subscribeStatus);
+app.use('/api/subscribe/iap/verify', iapVerify); 
+app.use('/api/subscribe/unified-status', unifiedStatus); 
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
