@@ -3,103 +3,7 @@ import admin from 'firebase-admin';
 
 const router = express.Router();
 const db = admin.firestore();
-
-// Helper function to process new facts and categorize them into the userProfile structure
-function processNewFacts(userProfile: any, newFacts: string[]) {
-  // Create a copy of the userProfile to avoid mutations
-  const updatedProfile = { ...userProfile };
-  
-  // Initialize sections if they don't exist
-  if (!updatedProfile.personalityInsights) {
-    updatedProfile.personalityInsights = { strengths: [], challenges: [], values: [], motivations: [] };
-  }
-  if (!updatedProfile.lifeContext) {
-    updatedProfile.lifeContext = { significantEvents: [], currentChallenges: [], relationships: [], healthFactors: [] };
-  }
-  if (!updatedProfile.goals) {
-    updatedProfile.goals = { shortTerm: [], longTerm: [], habits: { developing: [], breaking: [] } };
-  }
-  if (!updatedProfile.preferences) {
-    updatedProfile.preferences = { communicationStyle: "balanced", journalingGoals: [], interests: [] };
-  }
-
-  // Simple keyword matching to categorize facts
-  // This is a basic implementation - in a production environment, 
-  // you might want to use more sophisticated NLP techniques
-  for (const fact of newFacts) {
-    const factLower = fact.toLowerCase();
-    
-    // Personality insights
-    if (factLower.includes('strength') || factLower.includes('good at') || factLower.includes('excel')) {
-      if (!updatedProfile.personalityInsights.strengths.includes(fact)) {
-        updatedProfile.personalityInsights.strengths.push(fact);
-      }
-    } else if (factLower.includes('challenge') || factLower.includes('struggle') || factLower.includes('difficult')) {
-      if (!updatedProfile.personalityInsights.challenges.includes(fact)) {
-        updatedProfile.personalityInsights.challenges.push(fact);
-      }
-    } else if (factLower.includes('value') || factLower.includes('believe') || factLower.includes('important')) {
-      if (!updatedProfile.personalityInsights.values.includes(fact)) {
-        updatedProfile.personalityInsights.values.push(fact);
-      }
-    } else if (factLower.includes('motivation') || factLower.includes('driven') || factLower.includes('want to')) {
-      if (!updatedProfile.personalityInsights.motivations.includes(fact)) {
-        updatedProfile.personalityInsights.motivations.push(fact);
-      }
-    }
-    
-    // Life context
-    else if (factLower.includes('happened') || factLower.includes('event') || factLower.includes('experience')) {
-      if (!updatedProfile.lifeContext.significantEvents.includes(fact)) {
-        updatedProfile.lifeContext.significantEvents.push(fact);
-      }
-    } else if (factLower.includes('problem') || factLower.includes('issue') || factLower.includes('facing')) {
-      if (!updatedProfile.lifeContext.currentChallenges.includes(fact)) {
-        updatedProfile.lifeContext.currentChallenges.push(fact);
-      }
-    } else if (factLower.includes('relationship') || factLower.includes('friend') || factLower.includes('family') || factLower.includes('partner')) {
-      if (!updatedProfile.lifeContext.relationships.includes(fact)) {
-        updatedProfile.lifeContext.relationships.push(fact);
-      }
-    } else if (factLower.includes('health') || factLower.includes('medical') || factLower.includes('sleep') || factLower.includes('eating')) {
-      if (!updatedProfile.lifeContext.healthFactors.includes(fact)) {
-        updatedProfile.lifeContext.healthFactors.push(fact);
-      }
-    }
-    
-    // Goals and interests
-    else if (factLower.includes('short term') || factLower.includes('next week') || factLower.includes('soon')) {
-      if (!updatedProfile.goals.shortTerm.includes(fact)) {
-        updatedProfile.goals.shortTerm.push(fact);
-      }
-    } else if (factLower.includes('long term') || factLower.includes('future') || factLower.includes('aspire')) {
-      if (!updatedProfile.goals.longTerm.includes(fact)) {
-        updatedProfile.goals.longTerm.push(fact);
-      }
-    } else if (factLower.includes('start habit') || factLower.includes('develop habit') || factLower.includes('build habit')) {
-      if (!updatedProfile.goals.habits.developing.includes(fact)) {
-        updatedProfile.goals.habits.developing.push(fact);
-      }
-    } else if (factLower.includes('stop habit') || factLower.includes('break habit') || factLower.includes('quit')) {
-      if (!updatedProfile.goals.habits.breaking.includes(fact)) {
-        updatedProfile.goals.habits.breaking.push(fact);
-      }
-    } else if (factLower.includes('interest') || factLower.includes('hobby') || factLower.includes('enjoy')) {
-      if (!updatedProfile.preferences.interests.includes(fact)) {
-        updatedProfile.preferences.interests.push(fact);
-      }
-    }
-    
-    // Default case - if we can't categorize, add to values as a generic insight
-    else {
-      if (!updatedProfile.personalityInsights.values.includes(fact)) {
-        updatedProfile.personalityInsights.values.push(fact);
-      }
-    }
-  }
-  
-  return updatedProfile;
-}
+// userProfile processing removed
 
 const PERSONALITY_KEYS = [
   'resilience',
@@ -119,7 +23,6 @@ type AIResponse = {
   selfInsight?: string;
   thoughtPattern?: string;
   personalityDeltas?: Record<string, number>;
-  newFacts?: string[];
 };
 
 router.post('/', async (req, res) => {
@@ -147,7 +50,7 @@ router.post('/', async (req, res) => {
     }
 
     // — 1️⃣ Save journal entry
-    const { newFacts = [], personalityDeltas } = aiResponse;
+  const { personalityDeltas } = aiResponse;
     const entryRef = await db
       .collection('users')
       .doc(userId)
@@ -208,25 +111,7 @@ router.post('/', async (req, res) => {
       { merge: true }
     );
 
-    // — 3️⃣ Update userProfile with newFacts
-    if (newFacts.length > 0) {
-      const userSnap2 = await userRef.get();
-      const userProfile = userSnap2.exists && userSnap2.data()?.userProfile ? userSnap2.data()!.userProfile : {};
-      
-      // Process new facts to categorize them into userProfile sections
-      const updatedUserProfile = processNewFacts(userProfile, newFacts);
-      
-      await userRef.set(
-        {
-          // Update the comprehensive userProfile
-          userProfile: {
-            ...updatedUserProfile,
-            lastUpdated: admin.firestore.FieldValue.serverTimestamp()
-          }
-        },
-        { merge: true }
-      );
-    }
+  // — 3️⃣ userProfile update removed (newFacts functionality deleted)
 
     // — 4️⃣ Increment topic frequency
     const userSnap3 = await userRef.get();

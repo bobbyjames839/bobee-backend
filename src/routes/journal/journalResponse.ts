@@ -18,7 +18,6 @@ export type AIResponse = {
   nextStep: string;
   topic: string;
   personalityDeltas: PersonalityScores;
-  newFacts: string[];
   selfInsight: string;
   thoughtPattern: string;
 };
@@ -88,9 +87,8 @@ TASKS
 7. Based on the content of this journal entry, return **deltas** (positive or negative integer change, e.g. 2, -1, 0) for each personality trait:
   "resilience", "discipline", "focus", "selfWorth", "confidence", "clarity".
   Example: { "resilience": 2, "discipline": -1, ... }
-8. Extract any new personal facts you learn about the user, these will be used to provide the user with more personalized advice. Focus on facts not already present in their User Profile and categorize them appropriately (as the system will automatically add these to the corresponding sections in the userProfile).
-9. Provide a **detailed selfInsight** (2–3 sentences) offering nuanced analysis of recurring themes, emotional shifts, or emerging strengths. Consider trends visible across the user's profile data and personality metrics when available.
-10. Detect the primary thought pattern in this entry. Then write a 3–4 sentence paragraph that:
+8. Provide a **detailed selfInsight** (2–3 sentences) offering nuanced analysis of recurring themes, emotional shifts, or emerging strengths. Consider trends visible across the user's profile data and personality metrics when available.
+9. Detect the primary thought pattern in this entry. Then write a 3–4 sentence paragraph that:
     - Explains how this pattern shows up in the journal text
     - Describes its impact on the user's mindset
     - Suggests one concrete way to reframe or counteract it, tailored to their preferences and goals from the User Profile when available
@@ -115,7 +113,6 @@ Return **only** this JSON:
     "confidence": number,
     "clarity": number
   },
-  "newFacts": ["fact1", "fact2", ...],
   "selfInsight": "...",               
   "thoughtPattern": "..."          
 }
@@ -139,7 +136,6 @@ If unusable, respond:
     "confidence": 50,
     "clarity": 50
   },
-  "newFacts": [],
   "selfInsight": "",
   "thoughtPattern": ""
 }
@@ -200,9 +196,6 @@ If unusable, respond:
       nextStep: parsed.nextStep,
       topic: parsed.topic,
   personalityDeltas: parsed.personalityDeltas,
-      newFacts: Array.isArray(parsed.newFacts)
-        ? parsed.newFacts.filter((f: any) => typeof f === 'string')
-        : [],
       selfInsight: parsed.selfInsight,
       thoughtPattern: parsed.thoughtPattern,
     };

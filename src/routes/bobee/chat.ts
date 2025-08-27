@@ -14,7 +14,6 @@ interface ChatRequest {
   conversationId?: string
   question: string
   history: HistoryItem[]
-  userProfile?: any
 }
 
 const router = Router()
@@ -22,7 +21,7 @@ const db = admin.firestore()
 
 router.post('/', authenticate, async (req: Request, res: Response) => {
   try {
-    const { conversationId, question, history, userProfile } = req.body as ChatRequest
+  const { conversationId, question, history } = req.body as ChatRequest
     const uid = (req as AuthenticatedRequest).uid
 
     // Check word limit
@@ -34,42 +33,29 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Chat limit reached' })
     }
 
-    // Prepare metrics from userProfile
-    let metrics: Record<string, any> = {};
-    
-    // Extract key user profile information for the chatbot
-    if (req.body.userProfile) {
-      const profile = req.body.userProfile;
-      
-      // Add structured data from userProfile
-      metrics = {
-        name: profile.demographics?.name || "",
-        occupation: profile.demographics?.occupation || "",
-        location: profile.demographics?.location || "",
-        communicationStyle: profile.preferences?.communicationStyle || "balanced",
-        
-        // Add key insights as individual items
-        strengths: profile.personalityInsights?.strengths?.join(", ") || "",
-        challenges: profile.personalityInsights?.challenges?.join(", ") || "",
-        values: profile.personalityInsights?.values?.join(", ") || "",
-        motivations: profile.personalityInsights?.motivations?.join(", ") || "",
-        
-        // Add current context
-        currentChallenges: profile.lifeContext?.currentChallenges?.join(", ") || "",
-        significantEvents: profile.lifeContext?.significantEvents?.join(", ") || "",
-        healthContext: profile.lifeContext?.healthFactors?.join(", ") || "",
-        
-        // Add goals
-        shortTermGoals: profile.goals?.shortTerm?.join(", ") || "",
-        longTermGoals: profile.goals?.longTerm?.join(", ") || "",
-        habitsBuilding: profile.goals?.habits?.developing?.join(", ") || "",
-        habitsBreaking: profile.goals?.habits?.breaking?.join(", ") || "",
-        
-        // Add interests
-        interests: profile.preferences?.interests?.join(", ") || "",
-        journalingGoals: profile.preferences?.journalingGoals?.join(", ") || ""
-      };
+  // Load user profile facts & status
+  let metrics: Record<string, any> = {}
+  try {
+    const userProfileCol = db.collection('users').doc(uid).collection('userProfile')
+    const [factsSnap, statusSnap] = await Promise.all([
+      userProfileCol.doc('facts').get(),
+      userProfileCol.doc('status').get()
+    ])
+    const factsData = factsSnap.exists ? (factsSnap.data() as any) : null
+    const statusData = statusSnap.exists ? (statusSnap.data() as any) : null
+    const facts = Array.isArray(factsData?.facts) ? factsData!.facts.filter((f: any) => f && typeof f.text === 'string').map((f: any) => ({
+      text: f.text as string,
+      createdAt: f.createdAt && typeof f.createdAt.toMillis === 'function' ? f.createdAt.toMillis() : undefined
+    })) : []
+    metrics = {
+      userProfile: {
+  facts: facts.map((f: { text: string }) => f.text),
+        statusParagraph: (statusData?.statusParagraph || '').toString().trim()
+      }
     }
+  } catch (e) {
+    console.warn('Failed to load user profile for chat context', e)
+  }
 
     // Format past messages for AI
     const pastMessages: ChatMessage[] = history.flatMap(item => {

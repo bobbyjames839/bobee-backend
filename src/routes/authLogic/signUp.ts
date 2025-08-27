@@ -37,7 +37,8 @@ router.post('/', async (req: Request, res: Response) => {
     // Initialize empty conversations and journals collections
     const conversationsRef = db.collection('users').doc(uid).collection('conversations').doc('init')
     const journalsRef = db.collection('users').doc(uid).collection('journals').doc('init')
-
+    const userProfileFactsRef = db.collection('users').doc(uid).collection('userProfile').doc('facts')
+    const userProfileStatusRef = db.collection('users').doc(uid).collection('userProfile').doc('status')
     batch.set(userInfoRef, {
       name: nameRaw,
       email: emailRaw,
@@ -49,46 +50,24 @@ router.post('/', async (req: Request, res: Response) => {
       journalStats: { streak: 0, totalEntries: 0, totalWords: 0 },
       personality: { clarity: 50, confidence: 50, discipline: 50, focus: 50, resilience: 50, selfWorth: 50 },
       personalityDeltas: { clarity: 0, confidence: 0, discipline: 0, focus: 0, resilience: 0, selfWorth: 0 },
-      topics: {},
-      // New comprehensive userProfile structure instead of simple facts array
-      userProfile: {
-        demographics: {
-          name: nameRaw,
-          occupation: "",
-          age: null,
-          location: ""
-        },
-        preferences: {
-          communicationStyle: "balanced", // direct, empathetic, analytical, balanced
-          journalingGoals: [],
-          interests: []
-        },
-        personalityInsights: {
-          strengths: [],
-          challenges: [],
-          values: [],
-          motivations: []
-        },
-        lifeContext: {
-          significantEvents: [],
-          currentChallenges: [],
-          relationships: [],
-          healthFactors: []
-        },
-        goals: {
-          shortTerm: [],
-          longTerm: [],
-          habits: {
-            developing: [],
-            breaking: []
-          }
-        },
-        lastUpdated: admin.firestore.FieldValue.serverTimestamp()
-      }
-    })
+    topics: {},
+    lastBobeeMessage: admin.firestore.FieldValue.serverTimestamp()
+        // userProfile removed – no automatic personal profile creation on signup
+      })
 
     batch.set(conversationsRef, { initialized: true })
     batch.set(journalsRef, { initialized: true })
+    batch.set(userProfileFactsRef, {
+      facts: [
+        {
+          text: `the user is called ${nameRaw}`,
+          createdAt: admin.firestore.Timestamp.now(), // concrete timestamp; serverTimestamp sentinel not allowed inside arrays
+        },
+      ],
+    })
+    batch.set(userProfileStatusRef, {
+      statusParagraph: 'Getting started – we will reflect how you are doing here soon.'
+    })
 
     await batch.commit()
 

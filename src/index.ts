@@ -12,7 +12,6 @@ import deleteConversation from './routes/bobee/deleteConversation'
 import openConversation from './routes/bobee/openConversation'
 import chat from './routes/bobee/chat'
 import saveConversation from './routes/bobee/saveConversation'
-import loadUserFacts from './routes/bobee/loadUserFacts'
 //files page
 import getJournals from './routes/files/getJournals'
 import deleteJournal from './routes/files/deleteJournal'
@@ -21,6 +20,8 @@ import habitCardsStats from './routes/insights/habitCardsStats'
 import moodChartStats from './routes/insights/moodChartStats'
 import personalityStats from './routes/insights/personalityStats'
 import topicsStats from './routes/insights/topicStats'
+import bobeeMessage from './routes/insights/bobeeMessage'
+import bobeeMessageMeta from './routes/insights/bobeeMessageMeta'
 //journal page
 import getWordCountAndStreak from './routes/journal/getWordAndCountStreak';
 import checkVoiceUsage from './routes/journal/checkVoiceUsage';
@@ -28,6 +29,7 @@ import transcribe from './routes/journal/transcribeAudio';
 import personalityMetrics from './routes/journal/getPersonalityMetrics'
 import journalResponse from './routes/journal/journalResponse'
 import submitJournal from './routes/journal/submitJournal'
+import generateProfileFacts from './routes/journal/generateProfileFacts'
 //subcribe
 import subscribeStatus from './routes/subscribe/subscribeStatus';
 import iapVerify from './routes/subscribe/iapVerify';
@@ -53,7 +55,6 @@ app.use('/api/delete-conversation', deleteConversation)
 app.use('/api/open-conversation', openConversation)
 app.use('/api/chat', chat)
 app.use('/api/save-conversation', saveConversation)
-app.use('/api/load-user-facts', loadUserFacts)
 
 //files page
 app.use('/api/get-journals', getJournals)
@@ -64,6 +65,8 @@ app.use('/api/habit-cards-stats', habitCardsStats)
 app.use('/api/mood-chart-stats', moodChartStats)
 app.use('/api/personality-stats', personalityStats)
 app.use('/api/topics', topicsStats)
+app.use('/api/bobee-message', bobeeMessage)
+app.use('/api/bobee-message-meta', bobeeMessageMeta)
 
 //journal page
 app.use('/api/get-word-count-and-streak', getWordCountAndStreak);
@@ -72,6 +75,7 @@ app.use('/api/transcribe', transcribe);
 app.use('/api/get-personality-scores', personalityMetrics);
 app.use('/api/journal-response', journalResponse)
 app.use('/api/submit-journal', submitJournal)
+app.use('/api/generate-profile-facts', generateProfileFacts)
 
 //subscribe
 app.use('/api/subscribe/status', subscribeStatus);
