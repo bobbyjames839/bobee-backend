@@ -61,7 +61,32 @@ router.get('/', async (req: Request & { uid?: string }, res: Response) => {
     })
     const avgMoodLast3Days = count > 0 ? Number((sum / count).toFixed(2)) : null
 
-    res.json({ totalWords, totalEntries, currentStreak, avgMoodLast3Days })
+    // 3) Build hourly histogram (local user timezone not known; use UTC hour from createdAt)
+    const allJournalsSnap = await db
+      .collection('users').doc(uid)
+      .collection('journals')
+      .orderBy('createdAt', 'desc')
+      .limit(500) // cap for performance
+      .get();
+    const hours: number[] = new Array(24).fill(0);
+    const londonHourFormatter = new Intl.DateTimeFormat('en-GB', { hour: 'numeric', hour12: false, timeZone: 'Europe/London' });
+    allJournalsSnap.forEach(doc => {
+      const ts = doc.get('createdAt');
+      if (ts && typeof ts.toDate === 'function') {
+        const d: Date = ts.toDate();
+        // Convert to Europe/London hour (handles DST)
+        let h = 0;
+        try {
+          const parts = londonHourFormatter.formatToParts(d);
+          const hourPart = parts.find(p => p.type === 'hour');
+          if (hourPart) h = parseInt(hourPart.value, 10) || 0;
+        } catch (_) {
+          h = d.getUTCHours();
+        }
+        hours[h] += 1;
+      }
+    });
+    res.json({ totalWords, totalEntries, currentStreak, avgMoodLast3Days, hourlyHistogram: hours })
   } catch (err) {
     console.error('Error fetching HabitCards stats:', err)
     res.status(500).json({ error: 'Failed to read HabitCards stats' })
