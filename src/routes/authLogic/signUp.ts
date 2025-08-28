@@ -39,10 +39,9 @@ router.post('/', async (req: Request, res: Response) => {
     const journalsRef = db.collection('users').doc(uid).collection('journals').doc('init')
     const userProfileFactsRef = db.collection('users').doc(uid).collection('userProfile').doc('facts')
     const userProfileStatusRef = db.collection('users').doc(uid).collection('userProfile').doc('status')
-    batch.set(userInfoRef, {
+  batch.set(userInfoRef, {
       name: nameRaw,
       email: emailRaw,
-      subscribe: { subscribed: false, cancelDate: null },
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       lastJournalDate: null,
       voiceUsage: { date: today, totalSeconds: 0 },

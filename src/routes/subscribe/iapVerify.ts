@@ -10,7 +10,7 @@ interface VerifyBody { receiptData: string; }
 
 // POST /api/subscribe/iap/verify
 // Body: { receiptData: base64 string }
-// Stores entitlement in users/{uid}.entitlement and mirrors subscribe.subscribed for legacy code.
+// Stores entitlement in users/{uid}.entitlement (single source of truth for Apple subscription).
 router.post('/', authenticate, async (req: Request, res: Response) => {
   try {
     const { uid } = req as AuthenticatedRequest;
@@ -37,16 +37,27 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'No matching subscription in receipt', environment: verifyResp.environment });
     }
 
-    // Optional: bind original_transaction_id to this uid to discourage replay across accounts
+    // Minimal persistence strategy:
+    // 1. Store current entitlement under users/{uid}.entitlement (cache + quick lookup for unified-status)
+    // 2. Maintain a reverse mapping appleEntitlements/{originalTransactionId} -> { uid, lastSeen } to prevent cross‑account replay.
     const userRef = db.collection('users').doc(uid);
     const userDoc = await userRef.get();
     const existing = userDoc.exists ? (userDoc.data() || {}) : {};
     const previouslyBoundOtid = existing.entitlement?.originalTransactionId as string | undefined;
 
-    if (previouslyBoundOtid && previouslyBoundOtid !== sub.originalTransactionId) {
-      // If you want strict ownership, you could reject here instead.
-      // For now, just log a warning; accept the latest.
-      console.warn(`[iap/verify] uid ${uid} presented different original_transaction_id. Had ${previouslyBoundOtid}, now ${sub.originalTransactionId}`);
+    const otid = sub.originalTransactionId;
+    const reverseRef = db.collection('appleEntitlements').doc(otid);
+    const reverseSnap = await reverseRef.get();
+    const reverseData = reverseSnap.exists ? reverseSnap.data() || {} : {};
+    const mappedUid = reverseData.uid as string | undefined;
+
+    if (mappedUid && mappedUid !== uid) {
+      // If OTID already mapped to another uid, reject to avoid sharing. (Adjust policy as needed.)
+      return res.status(409).json({ error: 'original_transaction_id already bound to another account' });
+    }
+
+    if (previouslyBoundOtid && previouslyBoundOtid !== otid) {
+      console.warn(`[iap/verify] uid ${uid} presented different original_transaction_id. Had ${previouslyBoundOtid}, now ${otid}`);
     }
 
     const entitlement = {
@@ -60,12 +71,11 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
       environment: verifyResp.environment || 'unknown',
     };
 
-    const subscribePatch: any = { subscribe: { subscribed: sub.isActive } };
-
-    await userRef.set({ entitlement, ...subscribePatch }, { merge: true });
+  await userRef.set({ entitlement }, { merge: true });
+  await reverseRef.set({ uid, lastSeen: Date.now(), productId: sub.productId }, { merge: true });
 
     res.set('Cache-Control', 'no-store');
-    return res.json({ entitlement, subscribed: sub.isActive });
+  return res.json({ entitlement, subscribed: sub.isActive });
   } catch (err: any) {
     console.error('[iap/verify] error:', err);
     return res.status(500).json({ error: err.message || 'Internal error' });
