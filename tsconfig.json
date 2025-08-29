@@ -10,8 +10,9 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "forceConsistentCasingInFileNames": true,
+    "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
     "types": ["node"]                     
   },
-  "include": ["src"]
+  "include": ["src", "src/types/**/*.d.ts"]
 }

@@ -26,7 +26,7 @@ router.post(
     }
     const isSubscribed = data.subscribe?.subscribed === true;
 
-    const limit = isSubscribed ? 600 : 120;
+    const limit = isSubscribed ? 300 : 120;
     const newTotal = alreadyUsed + secondsUsed;
 
     if (newTotal > limit) {

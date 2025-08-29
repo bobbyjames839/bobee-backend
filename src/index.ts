@@ -1,6 +1,7 @@
 import 'dotenv/config';         
 import express from 'express';
 import cors from 'cors';
+import http from "http"    
 
 //auth etc etc
 import checkAuth from './routes/authLogic/checkAuth';
@@ -20,7 +21,6 @@ import habitCardsStats from './routes/insights/habitCardsStats'
 import moodChartStats from './routes/insights/moodChartStats'
 import personalityStats from './routes/insights/personalityStats'
 import topicsStats from './routes/insights/topicStats'
-import bobeeMessage from './routes/insights/bobeeMessage'
 import bobeeMessageMeta from './routes/insights/bobeeMessageMeta'
 //journal page
 import getWordCountAndStreak from './routes/journal/getWordAndCountStreak';
@@ -36,13 +36,15 @@ import iapVerify from './routes/subscribe/iapVerify';
 import unifiedStatus from './routes/subscribe/unifiedStatus';
 // settings
 import userPersonalityData from './routes/settings/userPersonalityData';
-
-
+//websocket 
+import { attachBobeeMessageWSServer } from "./ws/bobeeMessageWS"
 
 
 
 
 const app = express();
+// Create a single HTTP server so Express and WebSocket share the same listener
+const server = http.createServer(app)
 app.use(cors());
 app.use(express.json());
 
@@ -67,7 +69,6 @@ app.use('/api/habit-cards-stats', habitCardsStats)
 app.use('/api/mood-chart-stats', moodChartStats)
 app.use('/api/personality-stats', personalityStats)
 app.use('/api/topics', topicsStats)
-app.use('/api/bobee-message', bobeeMessage)
 app.use('/api/bobee-message-meta', bobeeMessageMeta)
 
 //journal page
@@ -87,7 +88,10 @@ app.use('/api/subscribe/unified-status', unifiedStatus);
 // settings
 app.use('/api/settings/get-personality-data', userPersonalityData);
 
+//websocket 
+attachBobeeMessageWSServer(server, "/ws/bobee-message")
+
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
-  console.log(`🚀 API listening on port ${PORT}`);
+server.listen(PORT, () => {
+  console.log(`API + WS listening on port ${PORT}`);
 });
