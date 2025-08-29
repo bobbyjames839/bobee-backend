@@ -34,6 +34,8 @@ import generateProfileFacts from './routes/journal/generateProfileFacts'
 import subscribeStatus from './routes/subscribe/subscribeStatus';
 import iapVerify from './routes/subscribe/iapVerify';
 import unifiedStatus from './routes/subscribe/unifiedStatus';
+// settings
+import userPersonalityData from './routes/settings/userPersonalityData';
 
 
 
@@ -81,6 +83,9 @@ app.use('/api/generate-profile-facts', generateProfileFacts)
 app.use('/api/subscribe/status', subscribeStatus);
 app.use('/api/subscribe/iap/verify', iapVerify); 
 app.use('/api/subscribe/unified-status', unifiedStatus); 
+
+// settings
+app.use('/api/settings/get-personality-data', userPersonalityData);
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {

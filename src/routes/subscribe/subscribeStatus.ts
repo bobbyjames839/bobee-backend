@@ -14,10 +14,10 @@ router.get('/', authenticate, async (req: Request, res: Response) => {
     const userRef = db.collection('users').doc(uid);
     const snap = await userRef.get();
     const data = snap.exists ? snap.data() || {} : {};
-  const entitlement = data.entitlement;
-  const isSubscribed = Boolean(entitlement && typeof entitlement.expiresAt === 'number' && entitlement.expiresAt > Date.now());
-  res.set('Cache-Control', 'no-store');
-  return res.json({ isSubscribed, source: isSubscribed ? 'apple' : null });
+    const entitlement = data.entitlement;
+    const isSubscribed = Boolean(entitlement && typeof entitlement.expiresAt === 'number' && entitlement.expiresAt > Date.now());
+    res.set('Cache-Control', 'no-store');
+    return res.json({ isSubscribed, source: isSubscribed ? 'apple' : null });
   } catch (err: any) {
     console.error('[subscribe/status] error:', err);
     return res.status(500).json({ error: err.message || 'Internal error' });
