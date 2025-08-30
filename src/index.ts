@@ -22,6 +22,7 @@ import moodChartStats from './routes/insights/moodChartStats'
 import personalityStats from './routes/insights/personalityStats'
 import topicsStats from './routes/insights/topicStats'
 import bobeeMessageMeta from './routes/insights/bobeeMessageMeta'
+import bobeeMessage from './routes/insights/bobeeMessage'
 //journal page
 import getWordCountAndStreak from './routes/journal/getWordAndCountStreak';
 import checkVoiceUsage from './routes/journal/checkVoiceUsage';
@@ -37,7 +38,6 @@ import unifiedStatus from './routes/subscribe/unifiedStatus';
 // settings
 import userPersonalityData from './routes/settings/userPersonalityData';
 //websocket 
-import { attachBobeeMessageWSServer } from "./ws/bobeeMessageWS"
 
 
 
@@ -70,6 +70,7 @@ app.use('/api/mood-chart-stats', moodChartStats)
 app.use('/api/personality-stats', personalityStats)
 app.use('/api/topics', topicsStats)
 app.use('/api/bobee-message-meta', bobeeMessageMeta)
+app.use('/api/bobee-message', bobeeMessage)
 
 //journal page
 app.use('/api/get-word-count-and-streak', getWordCountAndStreak);
@@ -88,10 +89,9 @@ app.use('/api/subscribe/unified-status', unifiedStatus);
 // settings
 app.use('/api/settings/get-personality-data', userPersonalityData);
 
-//websocket 
-attachBobeeMessageWSServer(server, "/ws/bobee-message")
+// websocket removed: bobeeMessage now HTTP POST /api/bobee-message
 
 const PORT = process.env.PORT || 4000;
 server.listen(PORT, () => {
-  console.log(`API + WS listening on port ${PORT}`);
+  console.log(`API listening on port ${PORT}`);
 });
