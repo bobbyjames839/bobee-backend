@@ -1,8 +1,6 @@
-// insights/bobeeMessage (HTTP route)
 import express from "express";
 import admin from "firebase-admin";
 import fetch, { RequestInit } from "node-fetch";
-import Replicate from "replicate";
 const router = express.Router();
 
 // -------------------- ENV & CONSTANTS --------------------
