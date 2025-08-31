@@ -5,8 +5,6 @@ import { authenticate, AuthenticatedRequest } from '../../middleware/authenticat
 export interface HistoryItem {
   question: string
   answer: string
-  reasoning: string
-  followup: string
 }
 
 const router = Router()
@@ -46,8 +44,6 @@ router.get(
         history.push({
           question,
           answer: String(answerObj.answer || ''),
-          reasoning: String(answerObj.reasoning || ''),
-          followup: String(answerObj.followup || ''),
         })
 
         idx += 2

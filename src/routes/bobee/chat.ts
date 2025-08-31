@@ -6,8 +6,6 @@ import { getBobeeAnswer, ChatMessage } from './getAIResponse'
 export interface HistoryItem {
   question: string
   answer?: string
-  reasoning?: string
-  followup?: string
 }
 
 interface ChatRequest {
@@ -26,7 +24,7 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
 
     // Check word limit
     const wordCount = [...history, { question, answer: '' }]
-      .flatMap(i => [i.question, i.answer || '', i.followup || ''])
+      .flatMap(i => [i.question, i.answer || ''])
       .join(' ')
       .split(/\s+/).length
     if (wordCount > 1500) {
@@ -61,12 +59,11 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
     const pastMessages: ChatMessage[] = history.flatMap(item => {
       const msgs: ChatMessage[] = [{ role: 'user', content: item.question }]
       if (item.answer) msgs.push({ role: 'assistant', content: item.answer })
-      if (item.followup) msgs.push({ role: 'assistant', content: item.followup })
       return msgs
     })
 
     // Get AI response
-    const { answer, reasoning, followup } = await getBobeeAnswer(
+  const { answer } = await getBobeeAnswer(
       uid,
       question,
       metrics,
@@ -81,7 +78,7 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
     const idx = history.length * 2 + 1
     const payload: FirebaseFirestore.DocumentData = {
       [`message${idx}`]: question,
-      [`message${idx + 1}`]: { answer, ...(reasoning && { reasoning }), ...(followup && { followup }) },
+      [`message${idx + 1}`]: { answer },
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     }
 
@@ -112,7 +109,7 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
       await convs.doc(conversationId).update(payload)
     }
 
-    res.json({ answer, reasoning, followup, conversationId: newId })
+  res.json({ answer, conversationId: newId })
   } catch (err) {
     console.error('Chat error:', err)
     res.status(500).json({ error: 'Server error' })

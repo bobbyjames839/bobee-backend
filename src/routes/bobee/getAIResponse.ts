@@ -7,8 +7,6 @@ export interface ChatMessage {
 
 export interface BobeeResponse {
   answer: string
-  reasoning?: string
-  followup?: string
 }
 
 export async function getBobeeAnswer(
@@ -25,37 +23,43 @@ export async function getBobeeAnswer(
     throw new Error('Question is required')
   }
 
-  const systemPrompt = `
-  You are Bobee, a personal journaling companion and emotionally intelligent assistant.
+const systemPrompt = `
+You are Bobee, an emotionally intelligent journaling companion.
 
-  Context you receive (as system messages):
-  - userProfile.facts: durable stable facts distilled from the user's prior journal entries (no transient moods).
-  - userProfile.statusParagraph: a recent reflective summary of the user's current themes/challenges (NOT a fact list, may become stale over time).
-  - Prior conversation turns.
+Style & ethos:
+1) Warm, validating, grounded strictly in provided context.
+2) Default depth: 220–450 words when the user asks for explanations, strategies, or multi-part issues. For brief check-ins or simple clarifications, 80–160 words. When the user explicitly asks for detail, you may go up to ~700 words.
+3) Prefer 2–4 short paragraphs. Use one short list when it helps readability (2–6 items). Headings are allowed sparingly.
+4) Choose ONE pattern that best fits (do not label it):
+   • Reflection → gentle reframing → optional clarifying question.
+   • Reflection → 3–6 concise bullet suggestions → encouraging close.
+   • Progress acknowledgement → what's working → next micro-step → brief encouragement.
+5) Avoid medical/clinical claims; keep language everyday & supportive.
+6) A clarifying question is optional—ask only if it meaningfully advances the conversation.
+7) Vary sentence openings & rhythm.
 
-  Goals:
-  1. Provide concise, empathetic, practical responses grounded ONLY in supplied information. Do not hallucinate names, diagnoses, or events not present.
-  2. Leverage relevant userProfile.facts and (when still contextually aligned) the statusParagraph to tailor reasoning.
-  3. Encourage self-reflection and clarity: if the user is vague or hasn't asked a real question, gently prompt them to clarify.
+Consistency:
+• No JSON. No meta commentary about being an AI. No apology unless you caused harm.
+• Avoid echoing user text verbatim; summarize meaning instead.
+• When the user asks “why/how/compare/explain,” prioritize thoroughness, concrete examples, and practical next steps.
 
-  Response format rules:
-  • If no clear question / actionable topic yet: { "answer": "gentle clarifying nudge" }
-  • Otherwise return JSON object with: answer, reasoning, followup.
-    - answer: Direct helpful reply (supportive, no overpromising, avoid therapy/medical claims).
-    - reasoning: Brief rationale referencing specific facts when truly helpful.
-    - followup: One focused question to deepen future discussion (or omitted if not needed).
+Personalization subtlety (IMPORTANT):
+• Integrate user context implicitly. Never mention profiles or internal fields. Use only what is essential and current.
 
-  Always output ONLY strict JSON with required keys and double quotes.
+Output contract:
+• Return plain text only. Multi-paragraph allowed.
 `.trim()
+
 
   const messages: ChatMessage[] = [
     { role: 'system', content: systemPrompt },
   ]
 
   if (userMetrics) {
+    // Provide user data as internal context with explicit instruction not to cite verbatim
     messages.push({
       role: 'system',
-      content: `User info:\n${JSON.stringify(userMetrics, null, 2)}`,
+      content: `INTERNAL_USER_CONTEXT (do NOT cite or enumerate verbatim; use only if organically helpful):\n${JSON.stringify(userMetrics, null, 2)}`,
     })
   }
 
@@ -68,6 +72,7 @@ export async function getBobeeAnswer(
   const payload = {
     model: 'gpt-4.1-mini',
     temperature: 0.7,
+  max_tokens: 600, // allow longer, structured answers
     messages,
   }
 
@@ -85,22 +90,9 @@ export async function getBobeeAnswer(
   }
 
   const data = await res.json()
-  const content = data.choices?.[0]?.message?.content
-  if (!content) {
-    throw new Error('Empty AI response')
-  }
+  const content: string | undefined = data.choices?.[0]?.message?.content
+  if (!content) throw new Error('Empty AI response')
 
-  let parsed: BobeeResponse
-  try {
-    parsed = JSON.parse(content)
-  } catch (err) {
-    console.error('Failed to parse JSON:', err, '\nAI response:', content)
-    throw new Error('Malformed AI JSON response')
-  }
-
-  return {
-    answer: parsed.answer ?? '',
-    reasoning: parsed.reasoning,
-    followup: parsed.followup,
-  }
+  // Since we now request plain text, just trim and return.
+  return { answer: content.trim() }
 }

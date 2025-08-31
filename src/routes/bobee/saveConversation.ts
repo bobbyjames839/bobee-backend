@@ -8,8 +8,6 @@ const db = admin.firestore()
 interface HistoryItem {
   question: string
   answer?: string
-  reasoning?: string
-  followup?: string
 }
 
 interface SaveConversationBody {
@@ -114,11 +112,7 @@ router.post(
         const qKey = `message${idx * 2 + 1}`
         const aKey = `message${idx * 2 + 2}`
         payload[qKey] = item.question
-        payload[aKey] = {
-          answer: item.answer ?? '',
-          ...(item.reasoning != null && { reasoning: item.reasoning }),
-          ...(item.followup != null && { followup: item.followup }),
-        }
+  payload[aKey] = { answer: item.answer ?? '' }
       })
 
       const convs = db

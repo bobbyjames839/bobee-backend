@@ -31,6 +31,8 @@ import personalityMetrics from './routes/journal/getPersonalityMetrics'
 import journalResponse from './routes/journal/journalResponse'
 import submitJournal from './routes/journal/submitJournal'
 import generateProfileFacts from './routes/journal/generateProfileFacts'
+// schedulers
+import { scheduleStreakReset } from './schedulers/resetStreaks'
 //subcribe
 import subscribeStatus from './routes/subscribe/subscribeStatus';
 import iapVerify from './routes/subscribe/iapVerify';
@@ -94,4 +96,5 @@ app.use('/api/settings/get-personality-data', userPersonalityData);
 const PORT = process.env.PORT || 4000;
 server.listen(PORT, () => {
   console.log(`API listening on port ${PORT}`);
+  scheduleStreakReset();
 });
