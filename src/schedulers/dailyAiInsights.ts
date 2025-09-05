@@ -10,11 +10,9 @@ interface JournalDoc {
   aiResponse?: any;
 }
 
-interface GeneratedInsights {
-  suggestions: { title: string; detail: string }[];
+interface GeneratedInsightsSimple {
+  suggestions: string[]; // exactly 3
   microChallenge: string;
-  sourceJournalIds: string[];
-  generatedAt: admin.firestore.FieldValue;
 }
 
 async function fetchRecentJournals(userId: string, limit = 3): Promise<JournalDoc[]> {
@@ -30,10 +28,10 @@ async function fetchRecentJournals(userId: string, limit = 3): Promise<JournalDo
 
 function buildPrompt(journals: JournalDoc[]) {
   const blocks = journals.map((j, idx) => `Journal ${idx + 1} (id=${j.id}):\n${j.transcript}`);
-  return `You are an assistant that creates concise daily guidance for a returning journaling user.\nGiven up to the three most recent journal entries, produce: \n1. EXACTLY three actionable, empathetic suggestion objects focussed on forward movement (not generic platitudes).\n2. ONE micro challenge (a single, concrete task doable today in < 5 minutes).\nRules:\n- Suggestions: each has a short title (max 6 words) and a detail (max 160 chars).\n- Avoid repeating the same verb openers.\n- Be gentle, non-clinical, no diagnosis, no promises.\n- Micro challenge: start with an imperative verb.\nReturn ONLY valid JSON matching this TypeScript type: { suggestions: { title: string; detail: string }[]; microChallenge: string; }\nIf journals are fewer than three or very short, still produce output.\n\nRecent journals:\n${blocks.join('\n\n')}\n\nJSON:`;
+  return `You create a DAILY INSIGHT PACK from up to the three most recent user journal entries.\nReturn ONLY valid compact JSON with this exact shape and nothing else: { "suggestions": string[3], "microChallenge": string }\nDefinitions:\n- suggestions: EXACTLY 3 short, actionable, empathetic forward-looking suggestions (max 140 chars each). No numbering, no quotes inside the string, no emojis, no titles—just plain advice sentences or imperatives. Avoid generic platitudes. Vary the opening verbs.\n- microChallenge: ONE concrete doable task (<10 min) beginning with an imperative verb (e.g., "Write", "List", "Walk", "Identify"). Must be specific and not trivial like deep breathing only.\nRules:\n- Avoid medical or diagnostic language.\n- No meta commentary.\n- If journals are sparse, still produce meaningful generic but supportive guidance.\n\nRecent journals:\n${blocks.join('\n\n')}\n\nJSON:`;
 }
 
-async function generateInsights(journals: JournalDoc[]): Promise<Omit<GeneratedInsights, 'generatedAt' | 'sourceJournalIds'>> {
+async function generateInsights(journals: JournalDoc[]): Promise<GeneratedInsightsSimple> {
   const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
   if (!OPENAI_API_KEY) throw new Error('Missing OPENAI_API_KEY');
   const model = process.env.OPENAI_MODEL || 'gpt-4.1-mini';
@@ -61,44 +59,47 @@ async function generateInsights(journals: JournalDoc[]): Promise<Omit<GeneratedI
   const data = await res.json();
   const raw = data.choices?.[0]?.message?.content?.trim() || '{}';
   let parsed: any;
-  try { parsed = JSON.parse(raw); } catch {
-    parsed = { suggestions: [], microChallenge: 'Take one deep mindful breath.' };
+  try { parsed = JSON.parse(raw); } catch { parsed = {}; }
+  let suggestions: string[] = Array.isArray(parsed.suggestions) ? parsed.suggestions.filter((s: any) => typeof s === 'string') : [];
+  suggestions = suggestions.slice(0,3);
+  const fallbackSuggestions = [
+    'List three small wins from this week.',
+    'Identify one recurring thought and reframe it more gently.',
+    'Write two sentences about what you need tomorrow.'
+  ];
+  while (suggestions.length < 3) suggestions.push(fallbackSuggestions[suggestions.length]);
+  let micro: string = typeof parsed.microChallenge === 'string' ? parsed.microChallenge : 'Write a sticky note with one encouraging phrase and place it where you will see it in the morning.';
+  // Basic micro challenge quality guard (length & verb start)
+  if (micro.length < 12 || /breath|breathe only/i.test(micro)) {
+    micro = 'Take a 7‑minute mindful walk outdoors and note three different sounds you hear.';
   }
-  if (!Array.isArray(parsed.suggestions)) parsed.suggestions = [];
-  // Normalise length
-  parsed.suggestions = parsed.suggestions.slice(0,3);
-  while (parsed.suggestions.length < 3) {
-    parsed.suggestions.push({ title: 'Reflect briefly', detail: 'Take 60 seconds to notice how you feel before continuing your day.' });
-  }
-  if (typeof parsed.microChallenge !== 'string') parsed.microChallenge = 'Stand, stretch, and take 3 slow breaths.';
-  return parsed as { suggestions: { title: string; detail: string }[]; microChallenge: string };
+  return { suggestions, microChallenge: micro };
 }
 
-async function writeInsights(userId: string, base: Omit<GeneratedInsights, 'generatedAt' | 'sourceJournalIds'>, journalIds: string[]) {
-  const ref = db.collection('users').doc(userId).collection('aiInsights').doc('daily');
-  const payload: GeneratedInsights = {
-    ...base,
-    sourceJournalIds: journalIds,
-    generatedAt: admin.firestore.FieldValue.serverTimestamp(),
-  };
-  await ref.set(payload, { merge: false });
+async function writeInsights(userId: string, base: GeneratedInsightsSimple) {
+  // Store directly on the user document under aiInsights field (no subcollection/doc 'daily')
+  await db.collection('users').doc(userId).set({
+    aiInsights: {
+      suggestions: base.suggestions,
+      microChallenge: base.microChallenge,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }
+  }, { merge: true });
 }
 
 export function scheduleDailyAiInsights() {
-  // Run at 05:05 Europe/London daily (after streak reset)
-  cron.schedule('55 18 * * *', async () => {
+  cron.schedule('01 19 * * *', async () => {
     console.log('[dailyAiInsights] job start');
     try {
-      // Stream users in batches to avoid memory blow-up
       const usersSnap = await db.collection('users').get();
       let processed = 0;
       for (const userDoc of usersSnap.docs) {
         const userId = userDoc.id;
         try {
           const journals = await fetchRecentJournals(userId, 3);
-            if (!journals.length) continue; // skip users with no journals
+            if (!journals.length) continue; 
           const insights = await generateInsights(journals);
-          await writeInsights(userId, insights, journals.map(j => j.id));
+          await writeInsights(userId, insights);
           processed++;
         } catch (e) {
           console.error('[dailyAiInsights] user failure', userId, e);
@@ -116,6 +117,6 @@ export async function runDailyAiInsightsOnceForUser(userId: string) {
   const journals = await fetchRecentJournals(userId, 3);
   if (!journals.length) throw new Error('No journals');
   const insights = await generateInsights(journals);
-  await writeInsights(userId, insights, journals.map(j => j.id));
+  await writeInsights(userId, insights);
   return insights;
 }
