@@ -86,7 +86,7 @@ async function writeInsights(userId: string, base: Omit<GeneratedInsights, 'gene
 
 export function scheduleDailyAiInsights() {
   // Run at 05:05 Europe/London daily (after streak reset)
-  cron.schedule('18 25 * * *', async () => {
+  cron.schedule('55 18 * * *', async () => {
     console.log('[dailyAiInsights] job start');
     try {
       // Stream users in batches to avoid memory blow-up
