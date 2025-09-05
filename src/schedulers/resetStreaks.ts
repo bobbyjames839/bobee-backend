@@ -2,14 +2,8 @@ import cron from 'node-cron';
 import { db } from '../firebaseAdmin';
 import admin from 'firebase-admin';
 
-/**
- * Runs daily at midnight Europe/London time.
- * Logic: For each user, if lastJournalDate is null OR older than 24h relative to now (London),
- * set journalStats.streak = 0 (if not already 0) and optionally store lastStreakReset.
- */
 export function scheduleStreakReset() {
-  // “0 0 * * *” at 00:00 daily. Using Europe/London to handle DST automatically.
-  cron.schedule('0 18 * * *', async () => {
+  cron.schedule('0 0 * * *', async () => {
     const now = new Date();
     try {
       const cutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000);

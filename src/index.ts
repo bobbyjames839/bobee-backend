@@ -8,11 +8,11 @@ import checkAuth from './routes/authLogic/checkAuth';
 import signUp from './routes/authLogic/signUp';
 import deleteAccount from './routes/authLogic/deleteAccount';
 //bobee page
-import getConvosAndDailyCount from './routes/bobee/getConvsAndDailyCount';
 import deleteConversation from './routes/bobee/deleteConversation'
 import openConversation from './routes/bobee/openConversation'
 import chat from './routes/bobee/chat'
 import saveConversation from './routes/bobee/saveConversation'
+import listConversations from './routes/bobee/listConversations'
 //files page
 import getJournals from './routes/files/getJournals'
 import deleteJournal from './routes/files/deleteJournal'
@@ -33,6 +33,7 @@ import submitJournal from './routes/journal/submitJournal'
 import generateProfileFacts from './routes/journal/generateProfileFacts'
 // schedulers
 import { scheduleStreakReset } from './schedulers/resetStreaks'
+import { scheduleDailyAiInsights } from './schedulers/dailyAiInsights'
 //subcribe
 import subscribeStatus from './routes/subscribe/subscribeStatus';
 import iapVerify from './routes/subscribe/iapVerify';
@@ -56,11 +57,11 @@ app.use('/api/signup', signUp);
 app.use('/api/delete-account', deleteAccount);
 
 //bobee page 
-app.use('/api/conversations-and-daily-count', getConvosAndDailyCount)
 app.use('/api/delete-conversation', deleteConversation)
 app.use('/api/open-conversation', openConversation)
 app.use('/api/chat', chat)
 app.use('/api/save-conversation', saveConversation)
+app.use('/api/list-conversations', listConversations)
 
 //files page
 app.use('/api/get-journals', getJournals)
@@ -97,4 +98,5 @@ const PORT = process.env.PORT || 4000;
 server.listen(PORT, () => {
   console.log(`API listening on port ${PORT}`);
   scheduleStreakReset();
+  scheduleDailyAiInsights();
 });
