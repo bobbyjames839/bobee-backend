@@ -13,6 +13,7 @@ import openConversation from './routes/bobee/openConversation'
 import chat from './routes/bobee/chat'
 import saveConversation from './routes/bobee/saveConversation'
 import listConversations from './routes/bobee/listConversations'
+import aiInsights from './routes/bobee/aiInsights'
 //files page
 import getJournals from './routes/files/getJournals'
 import deleteJournal from './routes/files/deleteJournal'
@@ -62,6 +63,7 @@ app.use('/api/open-conversation', openConversation)
 app.use('/api/chat', chat)
 app.use('/api/save-conversation', saveConversation)
 app.use('/api/list-conversations', listConversations)
+app.use('/api/ai-insights', aiInsights)
 
 //files page
 app.use('/api/get-journals', getJournals)
@@ -91,8 +93,6 @@ app.use('/api/subscribe/unified-status', unifiedStatus);
 
 // settings
 app.use('/api/settings/get-personality-data', userPersonalityData);
-
-// websocket removed: bobeeMessage now HTTP POST /api/bobee-message
 
 const PORT = process.env.PORT || 4000;
 server.listen(PORT, () => {
