@@ -120,7 +120,7 @@ async function writeInsights(userId: string, base: GeneratedInsightsSimple) {
 }
 
 export function scheduleDailyAiInsights() {
-  cron.schedule('48 8 * * *', async () => {
+  cron.schedule('30 13 * * *', async () => {
     console.log('[dailyAiInsights] job start');
     try {
       const usersSnap = await db.collection('users').get();
