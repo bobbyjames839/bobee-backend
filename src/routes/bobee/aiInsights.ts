@@ -13,7 +13,11 @@ router.get('/', authenticate, async (req, res) => {
     const ai = data.aiInsights || {};
     const suggestions: string[] = Array.isArray(ai.suggestions) ? ai.suggestions.filter((s: any) => typeof s === 'string') : [];
     const microChallenge = typeof ai.microChallenge === 'string' ? ai.microChallenge : null;
-    return res.json({ suggestions, microChallenge });
+    const reflectionQuestion = typeof ai.reflectionQuestion === 'string' ? ai.reflectionQuestion : "What are you grateful for today?";
+    const reflectionOptions = Array.isArray(ai.reflectionOptions)
+      ? ai.reflectionOptions.filter((o: any) => o && typeof o.text === 'string' && typeof o.score === 'number').map((o: any) => ({ text: o.text, score: o.score }))
+      : [];
+    return res.json({ suggestions, microChallenge, reflectionQuestion, reflectionOptions });
   } catch (e) {
     console.error('[aiInsights] error', e);
     return res.status(500).json({ error: 'failed' });

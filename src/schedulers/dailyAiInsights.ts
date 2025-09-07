@@ -10,10 +10,12 @@ interface JournalDoc {
   aiResponse?: any;
 }
 
+interface ReflectionOption { text: string; score: number }
 interface GeneratedInsightsSimple {
   suggestions: string[]; // exactly 3
   microChallenge: string;
   reflectionQuestion: string;
+  reflectionOptions: ReflectionOption[]; // exactly 4
 }
 
 async function fetchRecentJournals(userId: string, limit = 3): Promise<JournalDoc[]> {
@@ -29,7 +31,7 @@ async function fetchRecentJournals(userId: string, limit = 3): Promise<JournalDo
 
 function buildPrompt(journals: JournalDoc[]) {
   const blocks = journals.map((j, idx) => `Journal ${idx + 1} (id=${j.id}):\n${j.transcript}`);
-  return `You create a DAILY INSIGHT PACK from up to the three most recent user journal entries.\nReturn ONLY valid compact JSON with this exact shape and nothing else: { "suggestions": string[3], "microChallenge": string, "reflectionQuestion": string }\nDefinitions:\n- suggestions: EXACTLY 3 short, actionable, empathetic forward-looking suggestions (max 140 chars each). No numbering, no quotes inside the string, no emojis, no titles—just plain advice sentences or imperatives. Avoid generic platitudes. Vary the opening verbs.\n- microChallenge: ONE concrete doable task (<10 min) beginning with an imperative verb (e.g., "Write", "List", "Walk", "Identify"). Must be specific and not trivial like deep breathing only.\n- reflectionQuestion: ONE open-ended question to encourage further reflection.\n- reflection: A brief personal reflection (1-2 sentences) on the journaling process or insights gained.\nRules:\n- Avoid medical or diagnostic language.\n- No meta commentary.\n- If journals are sparse, still produce meaningful generic but supportive guidance.\n\nRecent journals:\n${blocks.join('\n\n')}\n\nJSON:`;
+  return `You create a DAILY INSIGHT PACK from up to the three most recent user journal entries.\nReturn ONLY compact JSON with this shape and NOTHING else: { "suggestions": string[3], "microChallenge": string, "reflectionQuestion": string, "reflectionOptions": [{"text": string, "score": number}] }\nDefinitions:\n- suggestions: EXACTLY 3 short, actionable, empathetic forward-looking suggestions (max 140 chars each). Plain sentences, no numbering, no emojis.\n- microChallenge: ONE concrete doable task (<10 min) starting with an imperative verb. Specific, not trivial.\n- reflectionQuestion: ONE open-ended question encouraging self-awareness or reframing based on themes.\n- reflectionOptions: EXACTLY 4 distinct possible USER ANSWERS the user might select in response to reflectionQuestion. Each option: concise (<= 80 chars), first-person where natural, no leading punctuation. "score" is an integer 1-5 (1 = low/negative/avoidant, 5 = highly positive / growth oriented). Provide a spectrum from lower to higher positivity without extreme negativity or self-harm.\nRules:\n- Avoid medical or diagnostic language.\n- No meta commentary. Output only JSON.\n- If journals are sparse, fall back to generic wellness-oriented content.\n\nRecent journals:\n${blocks.join('\n\n')}\n\nJSON:`;
 }
 
 async function generateInsights(journals: JournalDoc[]): Promise<GeneratedInsightsSimple> {
@@ -75,10 +77,33 @@ async function generateInsights(journals: JournalDoc[]): Promise<GeneratedInsigh
     micro = 'Take a 7‑minute mindful walk outdoors and note three different sounds you hear.';
   }
   let reflectionQuestion = typeof parsed.reflectionQuestion === 'string' ? parsed.reflectionQuestion : 'What is one new insight you have gained from your recent journaling?';
-  if (reflectionQuestion.length < 10) {
-    reflectionQuestion = 'What is one new insight you have gained from your recent journaling?';
+  if (reflectionQuestion.length < 10) reflectionQuestion = 'What is one new insight you have gained from your recent journaling?';
+
+  let reflectionOptions: ReflectionOption[] = Array.isArray(parsed.reflectionOptions)
+    ? parsed.reflectionOptions
+        .filter((o: any) => o && typeof o.text === 'string' && typeof o.score === 'number')
+        .map((o: any) => ({ text: String(o.text).trim(), score: Math.max(1, Math.min(5, Math.round(o.score))) }))
+    : [];
+  // Deduplicate by text
+  const seen = new Set<string>();
+  reflectionOptions = reflectionOptions.filter(o => {
+    const key = o.text.toLowerCase();
+    if (seen.has(key)) return false; seen.add(key); return true;
+  });
+  // Ensure 4 options covering a range of scores
+  const fallbackSpectrum: ReflectionOption[] = [
+    { text: 'I am unsure how to apply this yet.', score: 1 },
+    { text: 'I can try a small change based on this.', score: 2 },
+    { text: 'I feel motivated to act on this insight.', score: 4 },
+    { text: 'I already see how this will help me grow.', score: 5 },
+  ];
+  while (reflectionOptions.length < 4 && fallbackSpectrum.length) {
+    reflectionOptions.push(fallbackSpectrum.shift()!);
   }
-  return { suggestions, microChallenge: micro, reflectionQuestion };
+  reflectionOptions = reflectionOptions.slice(0,4);
+  // Sort ascending by score to present a clear gradient
+  reflectionOptions.sort((a,b) => a.score - b.score);
+  return { suggestions, microChallenge: micro, reflectionQuestion, reflectionOptions };
 }
 
 async function writeInsights(userId: string, base: GeneratedInsightsSimple) {
@@ -88,13 +113,14 @@ async function writeInsights(userId: string, base: GeneratedInsightsSimple) {
       suggestions: base.suggestions,
       microChallenge: base.microChallenge,
       reflectionQuestion: base.reflectionQuestion,
+  reflectionOptions: base.reflectionOptions,
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     }
   }, { merge: true });
 }
 
 export function scheduleDailyAiInsights() {
-  cron.schedule('22 8 * * *', async () => {
+  cron.schedule('48 8 * * *', async () => {
     console.log('[dailyAiInsights] job start');
     try {
       const usersSnap = await db.collection('users').get();
