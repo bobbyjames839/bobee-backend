@@ -7,17 +7,6 @@ const express_1 = require("express");
 const firebase_admin_1 = __importDefault(require("firebase-admin"));
 const authenticate_1 = require("../../middleware/authenticate");
 const getAIResponse_1 = require("./getAIResponse");
-/*
-Reflection Flow Endpoint (/api/reflection-flow)
-Phases:
-1) User selects an option -> client POST { reflectionQuestion, selectedOption }
-   - Server loads latest 3 journals, crafts system prompt asking AI to explore selection & ask ONE clarifying / deepening question.
-   - Returns { answer, phase: 'ai_followup' }
-2) User replies to that AI question -> client POST { reflectionQuestion, selectedOption, userReply }
-   - Server again loads latest 3 journals and past exchange (selection + first AI answer + user reply) and asks AI to give a concise closing reflection (no further question) 120-220 words.
-   - Returns { answer, done: true }
-No persistence required beyond normal analytics (omitted for now). This keeps flow stateless server-side.
-*/
 const router = (0, express_1.Router)();
 const db = firebase_admin_1.default.firestore();
 router.post('/', authenticate_1.authenticate, async (req, res) => {
@@ -54,13 +43,13 @@ router.post('/', authenticate_1.authenticate, async (req, res) => {
         });
         if (!userReply) {
             // Phase 1: after selection
-            const userPrompt = `The user is beginning a daily reflection. Reflection Question: "${reflectionQuestion}". They chose the option: "${selectedOption}". Engage them by acknowledging their choice and ask ONE thoughtful, gentle deepening question inviting a bit more detail or feeling. Keep it 70-120 words. End with the single question.`;
+            const userPrompt = `The user is beginning a daily reflection. Reflection Question: "${reflectionQuestion}". They chose the option: "${selectedOption}". Acknowledge their choice very briefly and ask ONE thoughtful, gentle deepening question inviting a bit more detail or feeling, making sure the question is fully answered. Keep it less than 60 words. End with the single question.`;
             const { answer } = await (0, getAIResponse_1.getBobeeAnswer)(uid, userPrompt, undefined, baseContext);
             return res.json({ answer, phase: 'ai_followup' });
         }
         else {
             // Phase 2: user replied; provide closing reflection (no more questions)
-            const userPrompt = `Daily reflection second turn. Original question: "${reflectionQuestion}". Option chosen: "${selectedOption}". User replied to your earlier follow-up with: "${userReply}". Provide a concise closing reflection (120-220 words) that: 1) Validates their perspective, 2) Highlights one underlying need or value, 3) Offers 1-2 gentle next-step micro suggestions, 4) Ends with an encouraging closing sentence. Do NOT ask another question.`;
+            const userPrompt = `Daily reflection second turn. Original question: "${reflectionQuestion}". Option chosen: "${selectedOption}". User replied to your earlier follow-up with: "${userReply}". Provide a concise closing reflection (120-220 words) that: 1) Validates their perspective, 2) Highlights one underlying need or value, 3) Offers 1-2 gentle next-step micro suggestions, 4) Ends with an encouraging closing sentence. Do NOT ask another question and do not make this sound overly nice, you should be trying to help the user but do not use overly warming language.`;
             const pastMessages = [
                 { role: 'user', content: `User selected option: ${selectedOption}` },
             ];

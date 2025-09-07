@@ -50,12 +50,12 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
 
     if (!userReply) {
       // Phase 1: after selection
-      const userPrompt = `The user is beginning a daily reflection. Reflection Question: "${reflectionQuestion}". They chose the option: "${selectedOption}". Acknowledge their choice very briefly and ask ONE thoughtful, gentle deepening question inviting a bit more detail or feeling. Keep it less than 60 words. End with the single question.`
+      const userPrompt = `The user is beginning a daily reflection. Reflection Question: "${reflectionQuestion}". They chose the option: "${selectedOption}". Acknowledge their choice very briefly and ask ONE thoughtful, gentle deepening question inviting a bit more detail or feeling, making sure the question is fully answered. Keep it less than 60 words. End with the single question.`
       const { answer } = await getBobeeAnswer(uid, userPrompt, undefined, baseContext)
       return res.json({ answer, phase: 'ai_followup' })
     } else {
       // Phase 2: user replied; provide closing reflection (no more questions)
-      const userPrompt = `Daily reflection second turn. Original question: "${reflectionQuestion}". Option chosen: "${selectedOption}". User replied to your earlier follow-up with: "${userReply}". Provide a concise closing reflection (120-220 words) that: 1) Validates their perspective, 2) Highlights one underlying need or value, 3) Offers 1-2 gentle next-step micro suggestions, 4) Ends with an encouraging closing sentence. Do NOT ask another question.`
+      const userPrompt = `Daily reflection second turn. Original question: "${reflectionQuestion}". Option chosen: "${selectedOption}". User replied to your earlier follow-up with: "${userReply}". Provide a concise closing reflection (120-220 words) that: 1) Validates their perspective, 2) Highlights one underlying need or value, 3) Offers 1-2 gentle next-step micro suggestions, 4) Ends with an encouraging closing sentence. Do NOT ask another question and do not make this sound overly nice, you should be trying to help the user but do not use overly warming language.`
       const pastMessages: ChatMessage[] = [
         { role: 'user', content: `User selected option: ${selectedOption}` },
       ]

@@ -17,6 +17,7 @@ const openConversation_1 = __importDefault(require("./routes/bobee/openConversat
 const chat_1 = __importDefault(require("./routes/bobee/chat"));
 // reflection flow (single 2-turn chat) new endpoint
 const reflectionFlow_1 = __importDefault(require("./routes/bobee/reflectionFlow"));
+const reflectionRate_1 = __importDefault(require("./routes/bobee/reflectionRate"));
 const saveConversation_1 = __importDefault(require("./routes/bobee/saveConversation"));
 const listConversations_1 = __importDefault(require("./routes/bobee/listConversations"));
 const aiInsights_1 = __importDefault(require("./routes/bobee/aiInsights"));
@@ -62,6 +63,7 @@ app.use('/api/delete-conversation', deleteConversation_1.default);
 app.use('/api/open-conversation', openConversation_1.default);
 app.use('/api/chat', chat_1.default);
 app.use('/api/reflection-flow', reflectionFlow_1.default);
+app.use('/api/reflection-rate', reflectionRate_1.default);
 app.use('/api/save-conversation', saveConversation_1.default);
 app.use('/api/list-conversations', listConversations_1.default);
 app.use('/api/ai-insights', aiInsights_1.default);

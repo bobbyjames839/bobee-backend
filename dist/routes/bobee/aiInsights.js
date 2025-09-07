@@ -19,9 +19,10 @@ router.get('/', authenticate_1.authenticate, async (req, res) => {
         const microChallenge = typeof ai.microChallenge === 'string' ? ai.microChallenge : null;
         const reflectionQuestion = typeof ai.reflectionQuestion === 'string' ? ai.reflectionQuestion : "What are you grateful for today?";
         const reflectionOptions = Array.isArray(ai.reflectionOptions)
-            ? ai.reflectionOptions.filter((o) => o && typeof o.text === 'string' && typeof o.score === 'number').map((o) => ({ text: o.text, score: o.score }))
+            ? ai.reflectionOptions.filter((o) => o && typeof o.text === 'string').map((o) => ({ text: o.text }))
             : [];
-        return res.json({ suggestions, microChallenge, reflectionQuestion, reflectionOptions });
+        const reflectionCompleted = data.reflectionCompleted === true;
+        return res.json({ suggestions, microChallenge, reflectionQuestion, reflectionOptions, reflectionCompleted });
     }
     catch (e) {
         console.error('[aiInsights] error', e);

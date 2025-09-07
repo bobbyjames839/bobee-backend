@@ -21,7 +21,7 @@ async function fetchRecentJournals(userId, limit = 3) {
 }
 function buildPrompt(journals) {
     const blocks = journals.map((j, idx) => `Journal ${idx + 1} (id=${j.id}):\n${j.transcript}`);
-    return `You create a DAILY INSIGHT PACK from up to the three most recent user journal entries.\nReturn ONLY compact JSON with this shape and NOTHING else: { "suggestions": string[3], "microChallenge": string, "reflectionQuestion": string, "reflectionOptions": [{"text": string, "score": number}] }\nDefinitions:\n- suggestions: EXACTLY 3 short, actionable, empathetic forward-looking suggestions (max 140 chars each). Plain sentences, no numbering, no emojis.\n- microChallenge: ONE concrete doable task (<10 min) starting with an imperative verb. Specific, not trivial.\n- reflectionQuestion: ONE open-ended question encouraging self-awareness or reframing based on themes.\n- reflectionOptions: EXACTLY 4 distinct possible USER ANSWERS the user might select in response to reflectionQuestion. Each option: concise (<= 80 chars), first-person where natural, no leading punctuation. "score" is an integer 1-5 (1 = low/negative/avoidant, 5 = highly positive / growth oriented). Provide a spectrum from lower to higher positivity without extreme negativity or self-harm.\nRules:\n- Avoid medical or diagnostic language.\n- No meta commentary. Output only JSON.\n- If journals are sparse, fall back to generic wellness-oriented content.\n\nRecent journals:\n${blocks.join('\n\n')}\n\nJSON:`;
+    return `You create a DAILY INSIGHT PACK from up to the three most recent user journal entries.\nReturn ONLY compact JSON with this shape and NOTHING else: { "suggestions": string[3], "microChallenge": string, "reflectionQuestion": string, "reflectionOptions": [{"text": string}] }\nDefinitions:\n- suggestions: EXACTLY 3 short, actionable, empathetic forward-looking suggestions (max 140 chars each). Plain sentences, no numbering, no emojis.\n- microChallenge: ONE concrete doable task (<10 min) starting with an imperative verb. Specific, not trivial.\n- reflectionQuestion: ONE open-ended question encouraging self-awareness or reframing based on themes.\n- reflectionOptions: EXACTLY 4 distinct possible concise USER ANSWERS (<= 80 chars) the user might select in response to reflectionQuestion. Each option: first-person where natural, no leading punctuation, relevant to the question, varied in tone or perspective (no scoring field).\nRules:\n- Avoid medical or diagnostic language.\n- No meta commentary. Output only JSON.\n- If journals are sparse, fall back to generic wellness-oriented content.\n\nRecent journals:\n${blocks.join('\n\n')}\n\nJSON:`;
 }
 async function generateInsights(journals) {
     const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
@@ -77,8 +77,8 @@ async function generateInsights(journals) {
         reflectionQuestion = 'What is one new insight you have gained from your recent journaling?';
     let reflectionOptions = Array.isArray(parsed.reflectionOptions)
         ? parsed.reflectionOptions
-            .filter((o) => o && typeof o.text === 'string' && typeof o.score === 'number')
-            .map((o) => ({ text: String(o.text).trim(), score: Math.max(1, Math.min(5, Math.round(o.score))) }))
+            .filter((o) => o && typeof o.text === 'string')
+            .map((o) => ({ text: String(o.text).trim() }))
         : [];
     // Deduplicate by text
     const seen = new Set();
@@ -91,17 +91,16 @@ async function generateInsights(journals) {
     });
     // Ensure 4 options covering a range of scores
     const fallbackSpectrum = [
-        { text: 'I am unsure how to apply this yet.', score: 1 },
-        { text: 'I can try a small change based on this.', score: 2 },
-        { text: 'I feel motivated to act on this insight.', score: 4 },
-        { text: 'I already see how this will help me grow.', score: 5 },
+        { text: 'I am unsure how to apply this yet.' },
+        { text: 'I can try a small change based on this.' },
+        { text: 'I feel motivated to act on this insight.' },
+        { text: 'I already see how this will help me grow.' },
     ];
     while (reflectionOptions.length < 4 && fallbackSpectrum.length) {
         reflectionOptions.push(fallbackSpectrum.shift());
     }
     reflectionOptions = reflectionOptions.slice(0, 4);
-    // Sort ascending by score to present a clear gradient
-    reflectionOptions.sort((a, b) => a.score - b.score);
+    // Deduplicate order retained (no scoring sort now)
     return { suggestions, microChallenge: micro, reflectionQuestion, reflectionOptions };
 }
 async function writeInsights(userId, base) {
@@ -113,11 +112,12 @@ async function writeInsights(userId, base) {
             reflectionQuestion: base.reflectionQuestion,
             reflectionOptions: base.reflectionOptions,
             updatedAt: firebase_admin_1.default.firestore.FieldValue.serverTimestamp(),
-        }
+        },
+        reflectionCompleted: false
     }, { merge: true });
 }
 function scheduleDailyAiInsights() {
-    node_cron_1.default.schedule('48 8 * * *', async () => {
+    node_cron_1.default.schedule('30 13 * * *', async () => {
         console.log('[dailyAiInsights] job start');
         try {
             const usersSnap = await firebaseAdmin_1.db.collection('users').get();

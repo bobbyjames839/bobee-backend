@@ -13,6 +13,7 @@ import openConversation from './routes/bobee/openConversation'
 import chat from './routes/bobee/chat'
 // reflection flow (single 2-turn chat) new endpoint
 import reflectionFlow from './routes/bobee/reflectionFlow'
+import reflectionRate from './routes/bobee/reflectionRate'
 import saveConversation from './routes/bobee/saveConversation'
 import listConversations from './routes/bobee/listConversations'
 import aiInsights from './routes/bobee/aiInsights'
@@ -63,7 +64,8 @@ app.use('/api/delete-account', deleteAccount);
 app.use('/api/delete-conversation', deleteConversation)
 app.use('/api/open-conversation', openConversation)
 app.use('/api/chat', chat)
-app.use('/api/reflection-flow', reflectionFlow)
+app.use('/api/bobee/reflection-message', reflectionFlow)
+app.use('/api/bobee/rate-reflection', reflectionRate)
 app.use('/api/save-conversation', saveConversation)
 app.use('/api/list-conversations', listConversations)
 app.use('/api/ai-insights', aiInsights)

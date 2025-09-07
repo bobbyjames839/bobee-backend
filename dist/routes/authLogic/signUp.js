@@ -50,7 +50,8 @@ router.post('/', async (req, res) => {
             personality: { clarity: 50, confidence: 50, discipline: 50, focus: 50, resilience: 50, selfWorth: 50 },
             personalityDeltas: { clarity: 0, confidence: 0, discipline: 0, focus: 0, resilience: 0, selfWorth: 0 },
             topics: {},
-            lastBobeeMessage: firebase_admin_1.default.firestore.FieldValue.serverTimestamp()
+            lastBobeeMessage: firebase_admin_1.default.firestore.FieldValue.serverTimestamp(),
+            reflectionCompleted: false
             // userProfile removed – no automatic personal profile creation on signup
         });
         batch.set(conversationsRef, { initialized: true });
