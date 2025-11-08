@@ -2,9 +2,7 @@ import cron from 'node-cron'
 import admin from 'firebase-admin'
 import { db } from '../firebaseAdmin'
 
-/**
- * Helper to format date as YYYY-MM-DD
- */
+// Helper: format date as YYYY-MM-DD
 function formatDateString(date: Date): string {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -12,9 +10,7 @@ function formatDateString(date: Date): string {
   return `${year}-${month}-${day}`
 }
 
-/**
- * Calculate daily mood for a specific user and date
- */
+// Calculate average mood for a user between given start and end
 async function calculateMoodForUserAndDate(userId: string, dateString: string, dayStart: Date, dayEnd: Date) {
   const journalsSnap = await db
     .collection('users')
@@ -56,11 +52,33 @@ async function calculateMoodForUserAndDate(userId: string, dateString: string, d
   return averageMood
 }
 
-
+// Schedules the daily calculation
 export function scheduleDailyMoodCalculation() {
-  cron.schedule('20 21 * * *', async () => {
-    console.log('[calculateDailyMoods] Scheduled run started...')
-  }, { timezone: 'Europe/London' })
+  cron.schedule(
+    '25 21 * * *', // Runs every day at 21:23 London time
+    async () => {
+      console.log('[calculateDailyMoods] Scheduled run started...')
+
+      const now = new Date()
+      const dateString = formatDateString(now)
+
+      // Define start and end of the current day (in UTC for Firestore)
+      const dayStart = new Date(now)
+      dayStart.setUTCHours(0, 0, 0, 0)
+      const dayEnd = new Date(now)
+      dayEnd.setUTCHours(23, 59, 59, 999)
+
+      const usersSnap = await db.collection('users').get()
+      for (const userDoc of usersSnap.docs) {
+        try {
+          await calculateMoodForUserAndDate(userDoc.id, dateString, dayStart, dayEnd)
+        } catch (err) {
+          console.error(`Error processing user ${userDoc.id}:`, err)
+        }
+      }
+
+      console.log('[calculateDailyMoods] Finished all users.')
+    },
+    { timezone: 'Europe/London' }
+  )
 }
-
-
