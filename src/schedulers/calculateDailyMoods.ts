@@ -10,7 +10,7 @@ function formatDateString(date: Date): string {
   return `${year}-${month}-${day}`
 }
 
-// Calculate average mood for a user between given start and end
+// Calculate average mood for a user for a specific date
 async function calculateMoodForUserAndDate(userId: string, dateString: string, dayStart: Date, dayEnd: Date) {
   const journalsSnap = await db
     .collection('users')
@@ -52,33 +52,48 @@ async function calculateMoodForUserAndDate(userId: string, dateString: string, d
   return averageMood
 }
 
-// Schedules the daily calculation
+// Schedule to calculate *yesterday's* daily mood
 export function scheduleDailyMoodCalculation() {
   cron.schedule(
-    '34 21 * * *', // Runs every day at 21:23 London time
+    '49 21 * * *', // every day at 21:23 London time
     async () => {
       console.log('[calculateDailyMoods] Scheduled run started...')
 
-      const now = new Date()
-      const dateString = formatDateString(now)
+      // Get yesterday's date
+      const yesterday = new Date()
+      yesterday.setDate(yesterday.getDate() - 1)
 
-      // Define start and end of the current day (in UTC for Firestore)
-      const dayStart = new Date(now)
+      const dateString = formatDateString(yesterday)
+
+      // Define start and end of yesterday (UTC times)
+      const dayStart = new Date(yesterday)
       dayStart.setUTCHours(0, 0, 0, 0)
-      const dayEnd = new Date(now)
+      const dayEnd = new Date(yesterday)
       dayEnd.setUTCHours(23, 59, 59, 999)
 
+      // Fetch all users
       const usersSnap = await db.collection('users').get()
+      if (usersSnap.empty) {
+        console.log('[calculateDailyMoods] No users found, skipping.')
+        return
+      }
+
+      // Process each user
       for (const userDoc of usersSnap.docs) {
         try {
-          await calculateMoodForUserAndDate(userDoc.id, dateString, dayStart, dayEnd)
+          const result = await calculateMoodForUserAndDate(userDoc.id, dateString, dayStart, dayEnd)
+          if (result !== null) {
+            console.log(`[calculateDailyMoods] Stored mood for user ${userDoc.id}: ${result}`)
+          } else {
+            console.log(`[calculateDailyMoods] No journals for user ${userDoc.id}.`)
+          }
         } catch (err) {
-          console.error(`Error processing user ${userDoc.id}:`, err)
+          console.error(`[calculateDailyMoods] Error processing user ${userDoc.id}:`, err)
         }
       }
 
-      console.log('[calculateDailyMoods] Finished all users.')
+      console.log('[calculateDailyMoods] Finished calculating all users for', dateString)
     },
-    { timezone: 'Europe/London' }
+    { timezone: 'Europe/London' } // ensures it runs at 21:23 London time (handles BST/GMT)
   )
 }
