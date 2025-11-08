@@ -15,6 +15,7 @@ router.use((req: Request & { uid?: string }, res: Response, next: NextFunction) 
 })
 
 router.get('/', async (req: Request & { uid?: string }, res: Response) => {
+  console.log('Received request to get journals by date');
   try {
     const uid = req.uid!
     const dateString = req.query.date as string

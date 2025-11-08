@@ -55,7 +55,7 @@ async function calculateMoodForUserAndDate(userId: string, dateString: string, d
 // Schedule to calculate *yesterday's* daily mood
 export function scheduleDailyMoodCalculation() {
   cron.schedule(
-    '49 21 * * *', // every day at 21:23 London time
+    '05 0 * * *', // every day at 21:23 London time
     async () => {
       console.log('[calculateDailyMoods] Scheduled run started...')
 
