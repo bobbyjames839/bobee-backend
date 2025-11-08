@@ -17,21 +17,32 @@ router.use((req: Request & { uid?: string }, res: Response, next: NextFunction) 
 router.get('/', async (req: Request & { uid?: string }, res: Response) => {
   try {
     const uid = req.uid!
-    const limitParam = req.query.limit as string | undefined
-    const limit = limitParam ? parseInt(limitParam, 10) : undefined
+    const dateString = req.query.date as string
 
-    let journalsRef = db
+    if (!dateString) {
+      return res.status(400).json({ error: 'Missing date parameter (format: YYYY-MM-DD)' })
+    }
+
+    // Parse the date and create start/end timestamps
+    const targetDate = new Date(dateString)
+    if (isNaN(targetDate.getTime())) {
+      return res.status(400).json({ error: 'Invalid date format (expected: YYYY-MM-DD)' })
+    }
+
+    targetDate.setHours(0, 0, 0, 0)
+    const dayEnd = new Date(targetDate)
+    dayEnd.setHours(23, 59, 59, 999)
+
+    // Fetch journals for this specific day
+    const snap = await db
       .collection('users')
       .doc(uid)
       .collection('journals')
+      .where('createdAt', '>=', admin.firestore.Timestamp.fromDate(targetDate))
+      .where('createdAt', '<=', admin.firestore.Timestamp.fromDate(dayEnd))
       .orderBy('createdAt', 'desc')
+      .get()
 
-    // Apply limit if specified
-    if (limit && !isNaN(limit) && limit > 0) {
-      journalsRef = journalsRef.limit(limit) as any
-    }
-
-    const snap = await journalsRef.get()
     const journals = snap.docs.map(doc => {
       const data = doc.data()
       return {
@@ -43,7 +54,7 @@ router.get('/', async (req: Request & { uid?: string }, res: Response) => {
 
     return res.json(journals)
   } catch (err) {
-    console.error('Error fetching journals:', err)
+    console.error('Error fetching journals by date:', err)
     return res.status(500).json({ error: 'Failed to fetch journals' })
   }
 })

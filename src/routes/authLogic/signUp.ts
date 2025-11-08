@@ -13,10 +13,13 @@ router.post('/', async (req: Request, res: Response) => {
     const nameRaw = String(req.body?.name || '').trim()
     const emailRaw = String(req.body?.email || '').trim().toLowerCase()
     const password = String(req.body?.password || '')
+    const gender = String(req.body?.gender || '').trim()
 
     if (!nameRaw) return res.status(400).json({ error: 'name required' })
     if (!emailRaw) return res.status(400).json({ error: 'email required' })
     if (!password) return res.status(400).json({ error: 'password required' })
+    if (!gender) return res.status(400).json({ error: 'gender required' })
+    if (!gender) return res.status(400).json({ error: 'gender required' })
     if (password.length < MIN_PASSWORD_LENGTH) {
       return res.status(400).json({ error: `weak-password` })
     }
@@ -39,21 +42,22 @@ router.post('/', async (req: Request, res: Response) => {
     const journalsRef = db.collection('users').doc(uid).collection('journals').doc('init')
     const userProfileFactsRef = db.collection('users').doc(uid).collection('userProfile').doc('facts')
     const userProfileStatusRef = db.collection('users').doc(uid).collection('userProfile').doc('status')
-  batch.set(userInfoRef, {
-      name: nameRaw,
-      email: emailRaw,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      lastJournalDate: null,
-      voiceUsage: { date: today, totalSeconds: 0 },
-      conversationUsage: { date: today, count: 0 },
-      journalStats: { streak: 0, totalEntries: 0, totalWords: 0 },
-      personality: { clarity: 50, confidence: 50, discipline: 50, focus: 50, resilience: 50, selfWorth: 50 },
-      personalityDeltas: { clarity: 0, confidence: 0, discipline: 0, focus: 0, resilience: 0, selfWorth: 0 },
-    topics: {},
-  lastBobeeMessage: admin.firestore.FieldValue.serverTimestamp(),
-  reflectionCompleted: false
-        // userProfile removed – no automatic personal profile creation on signup
-      })
+
+    batch.set(userInfoRef, {
+        name: nameRaw,
+        email: emailRaw,
+        gender: gender,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        lastJournalDate: null,
+        voiceUsage: { date: today, totalSeconds: 0 },
+        conversationUsage: { date: today, count: 0 },
+        journalStats: { streak: 0, totalEntries: 0, totalWords: 0 },
+        personality: { clarity: 50, confidence: 50, discipline: 50, focus: 50, resilience: 50, selfWorth: 50 },
+        personalityDeltas: { clarity: 0, confidence: 0, discipline: 0, focus: 0, resilience: 0, selfWorth: 0 },
+        topics: {},
+        lastBobeeMessage: admin.firestore.FieldValue.serverTimestamp(),
+        reflectionCompleted: false
+    })
 
     batch.set(conversationsRef, { initialized: true })
     batch.set(journalsRef, { initialized: true })
@@ -62,6 +66,10 @@ router.post('/', async (req: Request, res: Response) => {
         {
           text: `the user is called ${nameRaw}`,
           createdAt: admin.firestore.Timestamp.now(), // concrete timestamp; serverTimestamp sentinel not allowed inside arrays
+        },
+        {
+          text: `the user identifies as ${gender}`,
+          createdAt: admin.firestore.Timestamp.now(),
         },
       ],
     })

@@ -20,6 +20,8 @@ import aiInsights from './routes/bobee/aiInsights'
 //files page
 import getJournals from './routes/files/getJournals'
 import deleteJournal from './routes/files/deleteJournal'
+import getDailyMoods from './routes/files/getDailyMoods'
+import getJournalsByDate from './routes/files/getJournalsByDate'
 //insights page
 import habitCardsStats from './routes/insights/habitCardsStats'
 import moodChartStats from './routes/insights/moodChartStats'
@@ -36,8 +38,8 @@ import journalResponse from './routes/journal/journalResponse'
 import submitJournal from './routes/journal/submitJournal'
 import generateProfileFacts from './routes/journal/generateProfileFacts'
 // schedulers
-import { scheduleStreakReset } from './schedulers/resetStreaks'
 import { scheduleDailyAiInsights } from './schedulers/dailyAiInsights'
+import { scheduleDailyMoodCalculation } from './schedulers/calculateDailyMoods'
 //subcribe
 import subscribeStatus from './routes/subscribe/subscribeStatus';
 import iapVerify from './routes/subscribe/iapVerify';
@@ -73,6 +75,8 @@ app.use('/api/ai-insights', aiInsights)
 //files page
 app.use('/api/get-journals', getJournals)
 app.use('/api/delete-journal', deleteJournal)
+app.use('/api/get-daily-moods', getDailyMoods)
+app.use('/api/get-journals-by-date', getJournalsByDate)
 
 //insights page
 app.use('/api/habit-cards-stats', habitCardsStats)
@@ -102,6 +106,6 @@ app.use('/api/settings/get-personality-data', userPersonalityData);
 const PORT = process.env.PORT || 4000;
 server.listen(PORT, () => {
   console.log(`API listening on port ${PORT}`);
-  scheduleStreakReset();
   scheduleDailyAiInsights();
+  scheduleDailyMoodCalculation();
 });
