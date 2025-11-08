@@ -58,7 +58,7 @@ async function calculateMoodForUserAndDate(userId: string, dateString: string, d
 
 
 export function scheduleDailyMoodCalculation() {
-  cron.schedule('37 20 * * *', async () => {
+  cron.schedule('14 21 * * *', async () => {
     console.log('[calculateDailyMoods] Scheduled run started...')
   }, { timezone: 'UTC' })
 }
