@@ -56,54 +56,11 @@ async function calculateMoodForUserAndDate(userId: string, dateString: string, d
   return averageMood
 }
 
-/**
- * Scheduled function that runs daily at 08:58 (UTC)
- */
+
 export function scheduleDailyMoodCalculation() {
-  cron.schedule('58 8 * * *', async () => {
+  cron.schedule('37 20 * * *', async () => {
     console.log('[calculateDailyMoods] Scheduled run started...')
-    await runDailyMoodCalculationForAllUsers()
   }, { timezone: 'UTC' })
 }
 
-/**
- * On-demand helper to run for ALL users for yesterday
- */
-export async function runDailyMoodCalculationForAllUsers() {
-  console.log('[calculateDailyMoods] Manual run started...')
 
-  try {
-    // Yesterday’s date range
-    const now = new Date()
-    const yesterday = new Date(now)
-    yesterday.setDate(yesterday.getDate() - 1)
-    yesterday.setHours(0, 0, 0, 0)
-    const yesterdayEnd = new Date(yesterday)
-    yesterdayEnd.setHours(23, 59, 59, 999)
-
-    const dayString = formatDateString(yesterday)
-    console.log(`[calculateDailyMoods] Processing date: ${dayString}`)
-
-    // All users
-    const usersSnap = await db.collection('users').get()
-    let processedUsers = 0
-    let totalMoodsCalculated = 0
-
-    for (const userDoc of usersSnap.docs) {
-      const userId = userDoc.id
-      try {
-        const result = await calculateMoodForUserAndDate(userId, dayString, yesterday, yesterdayEnd)
-        if (result !== null) {
-          processedUsers++
-          totalMoodsCalculated++
-        }
-      } catch (error) {
-        console.error(`[calculateDailyMoods] Error processing user ${userId}:`, error)
-      }
-    }
-
-    console.log(`[calculateDailyMoods] Completed! Processed ${processedUsers} users, calculated ${totalMoodsCalculated} daily moods.`)
-  } catch (error) {
-    console.error('[calculateDailyMoods] Fatal error during manual run:', error)
-  }
-}
