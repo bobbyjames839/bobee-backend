@@ -7,6 +7,7 @@ import http from "http"
 import checkAuth from './routes/authLogic/checkAuth';
 import signUp from './routes/authLogic/signUp';
 import deleteAccount from './routes/authLogic/deleteAccount';
+import { checkEmail } from './routes/authLogic/checkEmail';
 //bobee page
 import deleteConversation from './routes/bobee/deleteConversation'
 import openConversation from './routes/bobee/openConversation'
@@ -61,6 +62,7 @@ app.use(express.json());
 app.use('/api/check-auth', checkAuth) //checks auth on page load and redirects
 app.use('/api/signup', signUp);
 app.use('/api/delete-account', deleteAccount);
+app.post('/api/check-email', checkEmail);
 
 //bobee page 
 app.use('/api/delete-conversation', deleteConversation)
