@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express'
 import admin from 'firebase-admin'
 import { authenticate, AuthenticatedRequest } from '../../middleware/authenticate'
+import { decrypt } from '../../utils/encryption'
 
 export interface HistoryItem {
   question: string
@@ -38,12 +39,12 @@ router.get(
         const aKey = `message${idx + 1}`
         if (!(qKey in data)) break
 
-        const question = data[qKey] as string
+        const question = decrypt(data[qKey] as string)
         const answerObj = (data[aKey] as Record<string, any>) || {}
 
         history.push({
           question,
-          answer: String(answerObj.answer || ''),
+          answer: decrypt(String(answerObj.answer || '')),
         })
 
         idx += 2

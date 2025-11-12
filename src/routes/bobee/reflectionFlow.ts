@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express'
 import admin from 'firebase-admin'
 import { authenticate, AuthenticatedRequest } from '../../middleware/authenticate'
 import { getBobeeAnswer, ChatMessage } from './getAIResponse'
+import { decrypt } from '../../utils/encryption'
 
 const router = Router()
 const db = admin.firestore()
@@ -31,8 +32,8 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
         const data = d.data()
         return {
           id: d.id,
-          transcript: (data.transcript || '').toString().slice(0, 800),
-          summary: data.aiResponse?.summary || '',
+          transcript: data.transcript ? decrypt((data.transcript || '').toString()).slice(0, 800) : '',
+          summary: data.aiResponse?.summary ? decrypt(data.aiResponse.summary || '') : '',
           createdAt: data.createdAt && typeof data.createdAt.toDate === 'function' ? data.createdAt.toDate().toISOString() : null
         }
       })

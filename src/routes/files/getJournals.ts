@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express'
 import admin from 'firebase-admin'
 import { authenticate } from '../../middleware/authenticate'
+import { decrypt } from '../../utils/encryption'
 
 const router = Router()
 const db = admin.firestore()
@@ -36,7 +37,18 @@ router.get('/', async (req: Request & { uid?: string }, res: Response) => {
       const data = doc.data()
       return {
         id: doc.id,
-        ...data,
+        transcript: data.transcript ? decrypt(data.transcript) : '',
+        prompt: data.prompt ? decrypt(data.prompt) : '',
+        aiResponse: data.aiResponse ? {
+          summary: data.aiResponse.summary ? decrypt(data.aiResponse.summary) : '',
+          nextStep: data.aiResponse.nextStep ? decrypt(data.aiResponse.nextStep) : '',
+          moodScore: data.aiResponse.moodScore,
+          feelings: data.aiResponse.feelings,
+          topic: data.aiResponse.topic,
+          selfInsight: data.aiResponse.selfInsight ? decrypt(data.aiResponse.selfInsight) : '',
+          thoughtPattern: data.aiResponse.thoughtPattern ? decrypt(data.aiResponse.thoughtPattern) : '',
+          personalityDeltas: data.aiResponse.personalityDeltas
+        } : null,
         createdAt: data.createdAt?.toDate().toISOString() ?? null,
       }
     })

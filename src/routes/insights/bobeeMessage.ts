@@ -1,6 +1,7 @@
 import express from "express";
 import admin from "firebase-admin";
 import fetch, { RequestInit } from "node-fetch";
+import { decrypt } from '../../utils/encryption';
 const router = express.Router();
 
 // -------------------- ENV & CONSTANTS --------------------
@@ -78,9 +79,11 @@ async function buildSpeechForUser(uid: string): Promise<string> {
     let createdAtMs = nowMs();
     const ca = data.createdAt;
     if (ca && typeof (ca as any).toMillis === "function") createdAtMs = (ca as any).toMillis();
-    const transcript = (data.transcript || "").toString().trim();
-    if (!transcript) return;
-    const summary = (typeof data.aiResponse?.summary === "string") ? data.aiResponse.summary : undefined;
+    const encryptedTranscript = (data.transcript || "").toString().trim();
+    if (!encryptedTranscript) return;
+    const transcript = decrypt(encryptedTranscript);
+    const encryptedSummary = (typeof data.aiResponse?.summary === "string") ? data.aiResponse.summary : undefined;
+    const summary = encryptedSummary ? decrypt(encryptedSummary) : undefined;
     entries.push({ createdAt: createdAtMs, transcript, summary });
   });
 

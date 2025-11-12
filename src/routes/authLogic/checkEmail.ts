@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { authAdmin } from '../../firebaseAdmin';
+import { authAdmin } from '../../utils/firebaseAdmin';
 
 export const checkEmail = async (req: Request, res: Response) => {
   try {

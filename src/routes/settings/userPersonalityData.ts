@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import admin from 'firebase-admin';
 import { authenticate, AuthenticatedRequest } from '../../middleware/authenticate';
+import { decrypt } from '../../utils/encryption';
 
 const router = Router();
 const db = admin.firestore();
@@ -23,11 +24,11 @@ router.get('/', async (req: Request, res: Response) => {
     const factsRaw: any[] = factsSnap.exists ? (factsSnap.data()?.facts || []) : [];
     const facts: string[] = factsRaw
       .filter(f => f && typeof f.text === 'string')
-      .map(f => f.text.trim())
+      .map(f => decrypt(f.text.trim()))
       .filter(Boolean);
 
     const personalityParagraph: string = statusSnap.exists
-      ? (statusSnap.data()?.statusParagraph || '')
+      ? decrypt(statusSnap.data()?.statusParagraph || '')
       : '';
 
   return res.json({ facts, personality: personalityParagraph });

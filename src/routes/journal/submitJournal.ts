@@ -1,5 +1,6 @@
 import express from 'express';
 import admin from 'firebase-admin';
+import { encrypt } from '../../utils/encryption';
 
 const router = express.Router();
 const db = admin.firestore();
@@ -49,24 +50,24 @@ router.post('/', async (req, res) => {
         .json({ error: 'Missing userId, transcript or aiResponse' });
     }
 
-    // — 1️⃣ Save journal entry
+    // — 1️⃣ Save journal entry (with encryption)
   const { personalityDeltas } = aiResponse;
     const entryRef = await db
       .collection('users')
       .doc(userId)
       .collection('journals')
       .add({
-        transcript,
-        prompt,
+        transcript: encrypt(transcript),
+        prompt: encrypt(prompt || ''),
         aiResponse: {
-          summary: aiResponse.summary,
-          nextStep: aiResponse.nextStep,
-          moodScore: aiResponse.moodScore,
-          feelings: aiResponse.feelings,
-          topic: aiResponse.topic,
-          selfInsight: aiResponse.selfInsight,
-          thoughtPattern: aiResponse.thoughtPattern,
-          personalityDeltas: aiResponse.personalityDeltas
+          summary: encrypt(aiResponse.summary),
+          nextStep: encrypt(aiResponse.nextStep),
+          moodScore: aiResponse.moodScore, // NOT encrypted (numeric)
+          feelings: aiResponse.feelings, // NOT encrypted (array of categories)
+          topic: aiResponse.topic, // NOT encrypted (category)
+          selfInsight: aiResponse.selfInsight ? encrypt(aiResponse.selfInsight) : '',
+          thoughtPattern: aiResponse.thoughtPattern ? encrypt(aiResponse.thoughtPattern) : '',
+          personalityDeltas: aiResponse.personalityDeltas // NOT encrypted (metrics)
         },
         createdAt: admin.firestore.Timestamp.now(),
       });

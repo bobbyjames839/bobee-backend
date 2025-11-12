@@ -1,7 +1,8 @@
 import cron from 'node-cron';
 import admin from 'firebase-admin';
-import { db } from '../firebaseAdmin';
+import { db } from '../utils/firebaseAdmin';
 import fetch from 'cross-fetch';
+import { decrypt } from '../utils/encryption';
 
 interface JournalDoc {
   id: string;
@@ -26,7 +27,15 @@ async function fetchRecentJournals(userId: string, limit = 3): Promise<JournalDo
     .orderBy('createdAt', 'desc')
     .limit(limit)
     .get();
-  return snap.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
+  return snap.docs.map(d => {
+    const data = d.data() as any;
+    return {
+      id: d.id,
+      transcript: data.transcript ? decrypt(data.transcript) : '',
+      createdAt: data.createdAt,
+      aiResponse: data.aiResponse
+    };
+  });
   }
 
   function buildPrompt(journals: JournalDoc[]) {

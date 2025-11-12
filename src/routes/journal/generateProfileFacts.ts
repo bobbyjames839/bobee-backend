@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { authenticate, AuthenticatedRequest } from '../../middleware/authenticate';
 import admin from 'firebase-admin';
 import fetch from 'node-fetch';
+import { encrypt, decrypt } from '../../utils/encryption';
 
 const router = Router();
 const db = admin.firestore();
@@ -20,7 +21,7 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
     const factsRef = db.collection('users').doc(uid).collection('userProfile').doc('facts');
     const statusRef = db.collection('users').doc(uid).collection('userProfile').doc('status');
 
-    // Load existing data
+    // Load existing data (decrypt)
     const [factsSnap, statusSnap] = await Promise.all([factsRef.get(), statusRef.get()]);
     const rawFacts: any[] = factsSnap.exists ? (factsSnap.data()?.facts || []) : [];
     const existingFacts: { text: string; createdAt: number }[] = rawFacts
@@ -30,10 +31,10 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
         const ca = f.createdAt;
         if (ca && typeof ca.toMillis === 'function') createdAt = ca.toMillis();
         else if (typeof ca === 'number') createdAt = ca; else createdAt = Date.now();
-        return { text: f.text as string, createdAt };
+        return { text: decrypt(f.text as string), createdAt };
       });
     const existingFactTexts = existingFacts.map(f => f.text);
-    const previousStatus: string = statusSnap.exists ? (statusSnap.data()?.statusParagraph || '') : '';
+    const previousStatus: string = statusSnap.exists ? decrypt(statusSnap.data()?.statusParagraph || '') : '';
 
     // -------- SINGLE CALL: Update facts & status together --------
     const systemPrompt = [
@@ -124,15 +125,15 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
     const keptMap = new Map(existingFacts.map(f => [f.text, f.createdAt || nowTs]));
   const finalFacts = updatedFacts.map(text => ({ text, createdAt: keptMap.get(text) || nowTs }));
 
-    // Firestore writes (single batch)
+    // Firestore writes (single batch with encryption)
     const batch = db.batch();
     // Only write facts if changed
     if (added.length || removed.length || !factsSnap.exists) {
-      const finalFactsForWrite = finalFacts.map(f => ({ text: f.text, createdAt: admin.firestore.Timestamp.fromMillis(f.createdAt) }));
+      const finalFactsForWrite = finalFacts.map(f => ({ text: encrypt(f.text), createdAt: admin.firestore.Timestamp.fromMillis(f.createdAt) }));
       batch.set(factsRef, { facts: finalFactsForWrite }, { merge: true });
     }
     if (newStatus !== previousStatus) {
-      batch.set(statusRef, { statusParagraph: newStatus, updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+      batch.set(statusRef, { statusParagraph: encrypt(newStatus), updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
     }
     await batch.commit();
 

@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express'
 import admin from 'firebase-admin'
 import fetch from 'cross-fetch'
+import { encrypt } from '../../utils/encryption'
 
 const router = Router()
 const db = admin.firestore()
@@ -104,15 +105,15 @@ router.post(
 
       const payload: FirebaseFirestore.DocumentData = {
         title,
-        transcript,
+        transcript: encrypt(transcript),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       }
 
       history.forEach((item, idx) => {
         const qKey = `message${idx * 2 + 1}`
         const aKey = `message${idx * 2 + 2}`
-        payload[qKey] = item.question
-  payload[aKey] = { answer: item.answer ?? '' }
+        payload[qKey] = encrypt(item.question)
+  payload[aKey] = { answer: encrypt(item.answer ?? '') }
       })
 
       const convs = db

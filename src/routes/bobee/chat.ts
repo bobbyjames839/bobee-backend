@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express'
 import admin from 'firebase-admin'
 import { authenticate, AuthenticatedRequest } from '../../middleware/authenticate'
 import { getBobeeAnswer, ChatMessage } from './getAIResponse'
+import { encrypt, decrypt } from '../../utils/encryption'
 
 export interface HistoryItem {
   question: string
@@ -42,13 +43,13 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
     const factsData = factsSnap.exists ? (factsSnap.data() as any) : null
     const statusData = statusSnap.exists ? (statusSnap.data() as any) : null
     const facts = Array.isArray(factsData?.facts) ? factsData!.facts.filter((f: any) => f && typeof f.text === 'string').map((f: any) => ({
-      text: f.text as string,
+      text: decrypt(f.text as string),
       createdAt: f.createdAt && typeof f.createdAt.toMillis === 'function' ? f.createdAt.toMillis() : undefined
     })) : []
     metrics = {
       userProfile: {
   facts: facts.map((f: { text: string }) => f.text),
-        statusParagraph: (statusData?.statusParagraph || '').toString().trim()
+        statusParagraph: statusData?.statusParagraph ? decrypt((statusData.statusParagraph || '').toString().trim()) : ''
       }
     }
   } catch (e) {
@@ -74,11 +75,11 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
     const convs = db.collection('users').doc(uid).collection('conversations')
     let newId = conversationId
 
-    // Create payload
+    // Create payload (with encryption)
     const idx = history.length * 2 + 1
     const payload: FirebaseFirestore.DocumentData = {
-      [`message${idx}`]: question,
-      [`message${idx + 1}`]: { answer },
+      [`message${idx}`]: encrypt(question),
+      [`message${idx + 1}`]: { answer: encrypt(answer) },
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     }
 

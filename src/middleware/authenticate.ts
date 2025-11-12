@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { authAdmin, db } from '../firebaseAdmin';
+import { authAdmin, db } from '../utils/firebaseAdmin';
 
 export interface AuthenticatedRequest extends Request {
   uid: string;

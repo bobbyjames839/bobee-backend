@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express'
 import admin from 'firebase-admin'
+import { encrypt } from '../../utils/encryption'
 
 const router = Router()
 const auth = admin.auth()
@@ -64,17 +65,17 @@ router.post('/', async (req: Request, res: Response) => {
     batch.set(userProfileFactsRef, {
       facts: [
         {
-          text: `the user is called ${nameRaw}`,
+          text: encrypt(`the user is called ${nameRaw}`),
           createdAt: admin.firestore.Timestamp.now(), // concrete timestamp; serverTimestamp sentinel not allowed inside arrays
         },
         {
-          text: `the user identifies as ${gender}`,
+          text: encrypt(`the user identifies as ${gender}`),
           createdAt: admin.firestore.Timestamp.now(),
         },
       ],
     })
     batch.set(userProfileStatusRef, {
-      statusParagraph: 'Getting started – we will reflect how you are doing here soon.'
+      statusParagraph: encrypt('Getting started – we will reflect how you are doing here soon.')
     })
 
     await batch.commit()

@@ -1,6 +1,6 @@
 import cron from 'node-cron'
 import admin from 'firebase-admin'
-import { db } from '../firebaseAdmin'
+import { db } from '../utils/firebaseAdmin'
 
 // Helper: format date as YYYY-MM-DD
 function formatDateString(date: Date): string {

@@ -15,7 +15,7 @@ interface RateBody {
 }
 
 router.post('/', authenticate, async (req: Request, res: Response) => {
-    console.log('this function is running')
+  console.log('this function is running')
   try {
     const { uid } = req as AuthenticatedRequest
     const { reflectionQuestion, selectedOption, userReply, aiFollowup, aiFinal } = req.body as RateBody
@@ -46,23 +46,24 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
       typeof parsed.label === 'string' ? parsed.label.slice(0, 40) : 'Engaged'
 
     const userRef = db.collection('users').doc(uid)
+    const ratingsColRef = userRef.collection('reflectionRatings')
+    const todayDocRef = ratingsColRef.doc(today)
 
-    // Ensure the doc exists and reflectionCompleted is set (creates field if absent)
-    await userRef.set(
-      {
-        reflectionCompleted: true
-      },
-      { merge: true }
-    )
+    // Ensure the user doc exists and reflectionCompleted is set
+    await userRef.set({ reflectionCompleted: true }, { merge: true })
 
-    // Add/merge today's rating without overwriting the whole map
-    await userRef.set(
+    // Write today's rating in a subcollection doc
+    await todayDocRef.set(
       {
-        [`reflectionRatings.${today}`]: {
-          score,
-          label,
-          updatedAt: admin.firestore.FieldValue.serverTimestamp()
-        }
+        score,
+        label,
+        // optional: keep context of what was rated
+        reflectionQuestion,
+        selectedOption,
+        userReply,
+        aiFollowup,
+        aiFinal,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
       },
       { merge: true }
     )
