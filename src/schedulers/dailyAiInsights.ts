@@ -121,7 +121,7 @@ async function writeInsights(userId: string, base: GeneratedInsightsSimple) {
       suggestions: base.suggestions,
       microChallenge: base.microChallenge,
       reflectionQuestion: base.reflectionQuestion,
-  reflectionOptions: base.reflectionOptions,
+      reflectionOptions: base.reflectionOptions,
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     },
   reflectionCompleted: false
@@ -129,7 +129,7 @@ async function writeInsights(userId: string, base: GeneratedInsightsSimple) {
 }
 
 export function scheduleDailyAiInsights() {
-  cron.schedule('30 13 * * *', async () => {
+  cron.schedule('58 7 * * *', async () => {
     console.log('[dailyAiInsights] job start');
     try {
       const usersSnap = await db.collection('users').get();
@@ -153,11 +153,4 @@ export function scheduleDailyAiInsights() {
   }, { timezone: 'Europe/London' });
 }
 
-// Optional on-demand helper (could be imported in a route later)
-export async function runDailyAiInsightsOnceForUser(userId: string) {
-  const journals = await fetchRecentJournals(userId, 3);
-  if (!journals.length) throw new Error('No journals');
-  const insights = await generateInsights(journals);
-  await writeInsights(userId, insights);
-  return insights;
-}
+

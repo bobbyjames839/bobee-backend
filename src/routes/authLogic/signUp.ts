@@ -57,7 +57,7 @@ router.post('/', async (req: Request, res: Response) => {
         personalityDeltas: { clarity: 0, confidence: 0, discipline: 0, focus: 0, resilience: 0, selfWorth: 0 },
         topics: {},
         lastBobeeMessage: admin.firestore.FieldValue.serverTimestamp(),
-        reflectionCompleted: false
+        reflectionCompleted: true
     })
 
     batch.set(conversationsRef, { initialized: true })
