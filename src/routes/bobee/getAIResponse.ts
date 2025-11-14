@@ -70,11 +70,12 @@ Output contract:
   messages.push({ role: 'user', content: question.trim() })
 
   const payload = {
-    model: 'gpt-4.1-mini',
-    temperature: 0.7,
-  max_tokens: 600, // allow longer, structured answers
+    model: 'gpt-5-mini',
     messages,
+    max_completion_tokens: 600,  
+    reasoning_effort: 'low',      
   }
+
 
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',

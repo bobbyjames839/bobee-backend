@@ -45,8 +45,9 @@ const getConversationTitle = async (
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-4.1-mini',
-      temperature: 0.7,
+      model: 'gpt-5-mini',
+      max_completion_tokens: 600, 
+      reasoning_effort: 'low',   
       messages,
     }),
   })

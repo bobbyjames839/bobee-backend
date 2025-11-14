@@ -37,7 +37,7 @@ router.post('/', authenticate, async (req: Request & { uid?: string }, res: Resp
   let userProfileData = {};
   try {
     if (uid) {
-      const db = require('../../firebaseAdmin').db;
+      const db = require('../../utils/firebaseAdmin').db;
       const userDoc = await db.collection('users').doc(uid).get();
       if (userDoc.exists) {
         const userData = userDoc.data();
@@ -88,7 +88,7 @@ TASKS
   "resilience", "discipline", "focus", "selfWorth", "confidence", "clarity".
   Example: { "resilience": 2, "discipline": -1, ... }
 8. Provide a **detailed selfInsight** (2–3 sentences) offering nuanced analysis of recurring themes, emotional shifts, or emerging strengths. Consider trends visible across the user's profile data and personality metrics when available.
-9. Detect the primary thought pattern in this entry. Then write a 3–4 sentence paragraph that:
+9. Detect the primary thought pattern in this entry. Then write a 3–4 sentence paragraph to the user that:
     - Explains how this pattern shows up in the journal text
     - Describes its impact on the user's mindset
     - Suggests one concrete way to reframe or counteract it, tailored to their preferences and goals from the User Profile when available
@@ -151,12 +151,14 @@ If unusable, respond:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4.1-mini',
-        temperature: 0.7,
+        model: 'gpt-5-mini',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: combinedContent },
         ],
+        max_completion_tokens: 700,         
+        reasoning_effort: 'low',                
+        response_format: { type: 'json_object' } 
       }),
     });
 

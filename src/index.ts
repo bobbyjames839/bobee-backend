@@ -43,8 +43,6 @@ import { scheduleDailyAiInsights } from './schedulers/dailyAiInsights'
 import { scheduleDailyMoodCalculation } from './schedulers/calculateDailyMoods'
 //subcribe
 import subscribeStatus from './routes/subscribe/subscribeStatus';
-import iapVerify from './routes/subscribe/iapVerify';
-import unifiedStatus from './routes/subscribe/unifiedStatus';
 // settings
 import userPersonalityData from './routes/settings/userPersonalityData';
 //websocket 
@@ -99,8 +97,6 @@ app.use('/api/generate-profile-facts', generateProfileFacts)
 
 //subscribe
 app.use('/api/subscribe/status', subscribeStatus);
-app.use('/api/subscribe/iap/verify', iapVerify); 
-app.use('/api/subscribe/unified-status', unifiedStatus); 
 
 // settings
 app.use('/api/settings/get-personality-data', userPersonalityData);

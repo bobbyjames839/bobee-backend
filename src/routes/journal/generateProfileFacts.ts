@@ -85,8 +85,10 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
       method: 'POST',
       headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'gpt-4.1-mini',
-        temperature: 0.3,
+        model: 'gpt-5-mini',
+        max_completion_tokens: 700,       
+        reasoning_effort: 'low',               
+        response_format: { type: 'json_object' },
         messages: [
           { role: 'system', content: systemPrompt },
             { role: 'user', content: JSON.stringify(userPayload) }

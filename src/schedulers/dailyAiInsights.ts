@@ -46,12 +46,13 @@ async function fetchRecentJournals(userId: string, limit = 3): Promise<JournalDo
 async function generateInsights(journals: JournalDoc[]): Promise<GeneratedInsightsSimple> {
   const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
   if (!OPENAI_API_KEY) throw new Error('Missing OPENAI_API_KEY');
-  const model = process.env.OPENAI_MODEL || 'gpt-4.1-mini';
+  const model = process.env.OPENAI_MODEL || 'gpt-5-mini';
   const prompt = buildPrompt(journals);
   const payload = {
     model,
-    temperature: 0.7,
-    max_tokens: 600,
+    max_completion_tokens: 700,   
+    reasoning_effort: 'low',              
+    response_format: { type: 'json_object' },
     messages: [
       { role: 'system', content: 'You produce ONLY compact JSON and nothing else.' },
       { role: 'user', content: prompt }
@@ -129,7 +130,7 @@ async function writeInsights(userId: string, base: GeneratedInsightsSimple) {
 }
 
 export function scheduleDailyAiInsights() {
-  cron.schedule('58 7 * * *', async () => {
+  cron.schedule('05 00 * * *', async () => {
     console.log('[dailyAiInsights] job start');
     try {
       const usersSnap = await db.collection('users').get();
