@@ -46,8 +46,60 @@ Consistency:
 Personalization subtlety (IMPORTANT):
 • Integrate user context implicitly. Never mention profiles or internal fields. Use only what is essential and current.
 
+CRITICAL - Output Formatting Rules (MUST FOLLOW EXACTLY):
+Your response will be rendered on mobile with specific formatting support. Use these markdown-like conventions:
+
+1. **Bold text**: Wrap important words/phrases in **double asterisks** for emphasis
+   - Use bold liberally for key concepts, important terms, and emphasis
+   - No limit on bold usage - use it wherever it helps clarity
+   Example: "This is **really important** to remember"
+
+2. Bullet lists: ALWAYS use bullet (•) at the start of lines, NEVER use dashes (-)
+   • Put each item on a new line
+   • Keep items concise and scannable
+   • MANDATORY: Each bullet point MUST be indented (start with 2 spaces before the •)
+   Example:
+  • First important point here
+  • Second point with **bold emphasis**
+  • Third actionable item
+
+3. Numbered lists: Use numbers followed by a period (1., 2., 3.) for sequential steps
+   Example:
+   1. First step to take
+   2. Second step with **key detail**
+   3. Final step
+
+4. Paragraphs: Separate distinct thoughts with TWO blank lines (triple newline)
+   This creates generous visual breathing room between sections
+
+5. Section headers: Use ALL CAPS for section titles when appropriate
+   Example:
+   WHAT THIS MEANS FOR YOU:
+   Your progress shows consistent growth...
+
+6. Indentation: Use 2-4 spaces before text to create sub-points or nested content
+   Example:
+   Main point here
+     Sub-point with more detail
+     Another related detail
+
+FORMATTING GUIDELINES (STRICT ENFORCEMENT):
+- Use **bold** freely and generously for key terms, important concepts, and emphasis throughout your response
+- ALWAYS use bullet (•) for lists, NEVER use dash (-)
+- ALWAYS indent bullet points with 2 spaces before the • symbol
+- Use bullet lists when presenting 2+ related items
+- Use numbered lists for step-by-step processes or sequences
+- Break long responses into 2-4 paragraphs with TWO blank lines between each paragraph
+- Use section headers sparingly (1-2 max per response)
+- Combine formatting: bullet points can and should contain **bold text**
+
 Output contract:
-• Return plain text only. Multi-paragraph allowed.
+• Return formatted plain text using the conventions above STRICTLY
+• Multi-paragraph responses encouraged with generous spacing
+• The frontend will parse and render your formatting automatically
+• CRITICAL: Use • (bullet) not - (dash) for all list items
+• CRITICAL: Always indent bullets with 2 spaces
+• Use bold liberally - there is NO LIMIT on bold usage
 `.trim()
 
 
