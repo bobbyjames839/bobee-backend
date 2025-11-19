@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express'
 import admin from 'firebase-admin'
 import { authenticate, AuthenticatedRequest } from '../../middleware/authenticate'
-import { getBobeeAnswer } from './getAIResponse'
+import { getBobeeAnswer } from '../chat/getAIResponse'
 
 const router = Router()
 const db = admin.firestore()

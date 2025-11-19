@@ -13,6 +13,7 @@ interface ChatRequest {
   conversationId?: string
   question: string
   history: HistoryItem[]
+  aiPersonality: { style: string; creativity: number } | null
 }
 
 const router = Router()
@@ -20,7 +21,7 @@ const db = admin.firestore()
 
 router.post('/', authenticate, async (req: Request, res: Response) => {
   try {
-  const { conversationId, question, history } = req.body as ChatRequest
+  const { conversationId, question, history, aiPersonality } = req.body as ChatRequest
     const uid = (req as AuthenticatedRequest).uid
 
     // Check word limit
@@ -68,7 +69,8 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
       uid,
       question,
       metrics,
-      pastMessages
+      pastMessages,
+      aiPersonality
     )
 
     // Firestore refs

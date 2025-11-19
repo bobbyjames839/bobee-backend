@@ -17,7 +17,11 @@ router.delete('/:id', async (req: Request & { uid?: string }, res: Response) => 
     const uid = req.uid!
     const id = req.params.id
 
-    await db.collection('users').doc(uid).collection('conversations').doc(id).delete()
+    // Delete both the conversation and its title
+    await Promise.all([
+      db.collection('users').doc(uid).collection('conversations').doc(id).delete(),
+      db.collection('users').doc(uid).collection('conversationTitles').doc(id).delete()
+    ])
 
     res.json({ success: true })
   } catch (e) {

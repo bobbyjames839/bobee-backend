@@ -38,7 +38,6 @@ router.post('/', async (req: Request, res: Response) => {
     const userInfoRef = db.collection('users').doc(uid)
     const today = new Date().toISOString().split('T')[0]
 
-    // Initialize empty conversations and journals collections
     const conversationsRef = db.collection('users').doc(uid).collection('conversations').doc('init')
     const journalsRef = db.collection('users').doc(uid).collection('journals').doc('init')
     const userProfileFactsRef = db.collection('users').doc(uid).collection('userProfile').doc('facts')
@@ -47,6 +46,10 @@ router.post('/', async (req: Request, res: Response) => {
     batch.set(userInfoRef, {
         name: nameRaw,
         email: emailRaw,
+        AIPersonality: {
+          style: 'friendly',
+          creativity: '70',
+        },
         gender: gender,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         lastJournalDate: null,
