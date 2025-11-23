@@ -25,7 +25,7 @@ export type AIResponse = {
 const router = Router();
 
 router.post('/', authenticate, async (req: Request & { uid?: string }, res: Response) => {
-  const { journal, prompt, personality } = req.body;
+  let { journal, prompt, personality } = req.body;
   const uid = req.uid;
 
   const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
@@ -50,7 +50,7 @@ router.post('/', authenticate, async (req: Request & { uid?: string }, res: Resp
     console.error('Error fetching user profile:', err);
     // Continue without userProfile if there's an error
   }
-  
+
   // Format the context for the AI with both personality metrics and user profile
   const personalityString = `Personality metrics:\n${JSON.stringify(personality, null, 2)}`;
   const userProfileString = Object.keys(userProfileData).length > 0 ? 
@@ -78,17 +78,18 @@ You will receive:
 
 TASKS
 1. Validate the entry (must contain at least 2 words).
-2. Rate overall mood from 1 (very negative) to 10 (very positive).
-3. Output exactly three single-word descriptors that best capture the user's feelings (e.g. ["calm","uncertain","hopeful"]).
-4. Write one reflective paragraph (50–70 words) that reads the journal back to the user in a thoughtful and empathetic tone. If the User Profile is available, personalize this based on their demographics, preferences, and insights.
-5. Provide one concise "next step" sentence (≤ 20 words) suggesting a simple action the user could try tomorrow. Reference their goals or challenges from the User Profile when possible.
-6. Assign a **single-word** topic that best describes the journal entry. Choose from:
+2. If no prompt was provided in the input, generate a concise prompt (5-12 words) that captures what the user was reflecting on. The prompt should be a title for the input. If a prompt was already provided, return it as-is in the generatedPrompt field.
+3. Rate overall mood from 1 (very negative) to 10 (very positive).
+4. Output exactly three single-word descriptors that best capture the user's feelings (e.g. ["calm","uncertain","hopeful"]).
+5. Write one reflective paragraph (50–70 words) that reads the journal back to the user in a thoughtful and empathetic tone. If the User Profile is available, personalize this based on their demographics, preferences, and insights.
+6. Provide one concise "next step" sentence (≤ 20 words) suggesting a simple action the user could try tomorrow. Reference their goals or challenges from the User Profile when possible.
+7. Assign a **single-word** topic that best describes the journal entry. Choose from:
    ["emotion","mood","achievement","work","relationships","stress","gratitude","health","productivity","anxiety","growth","money","creativity","reflection","goals"]
-7. Based on the content of this journal entry, return **deltas** (positive or negative integer change, e.g. 2, -1, 0) for each personality trait:
+8. Based on the content of this journal entry, return **deltas** (positive or negative integer change, e.g. 2, -1, 0) for each personality trait:
   "resilience", "discipline", "focus", "selfWorth", "confidence", "clarity".
   Example: { "resilience": 2, "discipline": -1, ... }
-8. Provide a **detailed selfInsight** (2–3 sentences) offering nuanced analysis of recurring themes, emotional shifts, or emerging strengths. Consider trends visible across the user's profile data and personality metrics when available.
-9. Detect the primary thought pattern in this entry. Then write a 3–4 sentence paragraph to the user that:
+9. Provide a **detailed selfInsight** (2–3 sentences) offering nuanced analysis of recurring themes, emotional shifts, or emerging strengths. Consider trends visible across the user's profile data and personality metrics when available.
+10. Detect the primary thought pattern in this entry. Then write a 3–4 sentence paragraph to the user that:
     - Explains how this pattern shows up in the journal text
     - Describes its impact on the user's mindset
     - Suggests one concrete way to reframe or counteract it, tailored to their preferences and goals from the User Profile when available
@@ -100,6 +101,7 @@ Return **only** this JSON:
 \`\`\`json
 {
   "isValidEntry": boolean,
+  "generatedPrompt": "...",
   "moodScore": number,
   "feelings": ["...", "...", "..."],
   "summary": "...",
@@ -202,7 +204,10 @@ If unusable, respond:
       thoughtPattern: parsed.thoughtPattern,
     };
 
-    return res.status(200).json({ aiResponse: result });
+    return res.status(200).json({ 
+      aiResponse: result,
+      generatedPrompt: parsed.generatedPrompt || prompt || undefined
+    });
   } catch (err) {
     console.error('[getAIResponse Error]', err);
     return res.status(500).json({ error: 'Failed to generate AI response' });
