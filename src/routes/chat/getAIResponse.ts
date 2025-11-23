@@ -91,10 +91,10 @@ Personalization subtlety (IMPORTANT):
 CRITICAL - Output Formatting Rules (MUST FOLLOW EXACTLY):
 Your response will be rendered on mobile with specific formatting support. Use these markdown-like conventions:
 
-1. *Bold text*: Wrap important words/phrases in *asterisks* for emphasis
+1. **Bold text**: Wrap important words/phrases in **double asterisks** for emphasis
    - Use bold liberally for key concepts, important terms, and emphasis
    - No limit on bold usage - use it wherever it helps clarity
-   Example: "This is *really important* to remember"
+   Example: "This is **really important** to remember"
 
 2. Bullet lists: ALWAYS use bullet (•) at the start of lines, NEVER use dashes (-)
    • Put each item on a new line
@@ -126,7 +126,7 @@ Your response will be rendered on mobile with specific formatting support. Use t
      Another related detail
 
 FORMATTING GUIDELINES (STRICT ENFORCEMENT):
-- Use *bold* (this needs to be only one asterix either side) freely and generously for key terms, important concepts, and emphasis throughout your response
+- Use **bold** (ALWAYS use double asterisks, never single) freely and generously for key terms, important concepts, and emphasis throughout your response
 - ALWAYS use bullet (•) for lists, NEVER use dash (-)
 - ALWAYS indent bullet points with 2 spaces before the • symbol
 - Use bullet lists when presenting 2+ related items
