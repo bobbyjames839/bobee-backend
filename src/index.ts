@@ -6,7 +6,6 @@ import http, { get } from "http"
 //auth etc etc
 import checkAuth from './routes/authLogic/checkAuth';
 import signUp from './routes/authLogic/signUp';
-import deleteAccount from './routes/authLogic/deleteAccount';
 import { checkEmail } from './routes/authLogic/checkEmail';
 
 //bobee page
@@ -61,7 +60,6 @@ app.use(express.json());
 //auth etc etc
 app.use('/api/check-auth', checkAuth) //checks auth on page load and redirects
 app.use('/api/signup', signUp);
-app.use('/api/delete-account', deleteAccount);
 app.post('/api/check-email', checkEmail);
 
 //chat page 
